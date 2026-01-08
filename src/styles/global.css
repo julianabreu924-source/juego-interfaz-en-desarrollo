@@ -1,0 +1,1096 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+:root {
+  --pixel-bg: #1a072a; /* Deep Purple Background */
+  --pixel-purple: #6a1b9a;
+  --pixel-purple-light: #9c27b0;
+  --pixel-gold: #ffde59;
+  --pixel-gold-dark: #c5a028;
+  --pixel-text: #ffffff;
+  --font-pixel: 'Press Start 2P', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  font-family: var(--font-pixel);
+}
+
+body {
+  background-color: var(--pixel-bg);
+  color: var(--pixel-text);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  /* Animating Nebula Base */
+  background: radial-gradient(circle at center, #2e004d 0%, #1a072a 100%);
+}
+
+@keyframes starsTwinkle {
+  from { opacity: 0.2; }
+  to { opacity: 0.4; }
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Professional Pixel Border Wrapper */
+/* Professional Pixel Rounded Border Wrapper */
+.game-wrapper {
+  position: relative;
+  padding: 16px;
+  background: var(--pixel-gold-dark);
+  margin: 20px;
+  
+  /* "Pixel Art Rounded" technique using box-shadows */
+  box-shadow: 
+    /* Layer 1: Inner Bevel (Light/Dark) */
+    inset 4px 4px 0 var(--pixel-gold),
+    inset -4px -4px 0 rgba(0,0,0,0.4),
+    
+    /* Layer 2: Main Body Extensions (Creating the cross shape) */
+    4px 0 0 var(--pixel-gold-dark),
+    -4px 0 0 var(--pixel-gold-dark),
+    0 -4px 0 var(--pixel-gold-dark),
+    0 4px 0 var(--pixel-gold-dark),
+    
+    /* Layer 3: Black Outline (Stepped) */
+    8px 0 0 #000,
+    -8px 0 0 #000,
+    0 -8px 0 #000,
+    0 8px 0 #000,
+    
+    /* Corners for Outline (filling the gaps creates a rounded 2px step look) */
+    4px 4px 0 4px #000,
+    -4px 4px 0 4px #000,
+    4px -4px 0 4px #000,
+    -4px -4px 0 4px #000,
+    
+    /* Layer 4: Deep Shadow */
+    0 20px 50px rgba(0,0,0,0.9);
+    
+  z-index: 10;
+}
+
+/* Cleanup old corner pseudo-elements as they are replaced by CSS shadows */
+.game-wrapper::after, .game-wrapper::before {
+  display: none;
+}
+
+.game-viewport {
+  position: relative;
+  width: 1200px;
+  height: 700px;
+  overflow: hidden;
+  background-color: var(--pixel-bg);
+  /* Inner deeply inset frame */
+  box-shadow: 
+    inset 6px 6px 0 #000,
+    inset -6px -6px 0 #000;
+  border: none; /* Removing solid border in favor of shadow */
+}
+
+/* Settings Gear Style */
+.settings-gear-container {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+}
+
+.settings-gear-button {
+  all: unset;
+  cursor: pointer;
+  color: var(--pixel-gold);
+  filter: drop-shadow(0 4px 0px rgba(0,0,0,0.5));
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-gear-button:hover {
+  transform: rotate(90deg) scale(1.2);
+  color: #fff;
+}
+
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 420px;
+  align-items: stretch;
+}
+
+.menu-footer {
+  position: absolute;
+  bottom: 2.5rem;
+  color: var(--pixel-gold-dark);
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  opacity: 0.6;
+}
+
+.dev-ui-overlay {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+/* --- NEW CRYSTAL MANA LOADING SCREEN --- */
+.loading-container-v2 {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #050210;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.loading-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(140, 82, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 82, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.5;
+}
+
+.loading-content-wrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+/* Rune Spinner */
+.rune-spinner-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rune-circle-outer {
+  position: absolute;
+  inset: 0;
+  border: 4px dashed var(--pixel-gold-dark);
+  border-radius: 50%;
+  animation: spinRune 8s infinite linear;
+}
+
+.rune-circle-inner {
+  position: absolute;
+  inset: 20px;
+  border: 2px solid var(--pixel-gold);
+  border-radius: 50%;
+  animation: spinRune 4s infinite reverse linear;
+  box-shadow: 0 0 20px rgba(255, 222, 89, 0.2);
+}
+
+.pixel-crystal-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--pixel-gold);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  animation: pulseCrystal 2s infinite ease-in-out;
+  box-shadow: 0 0 30px var(--pixel-gold);
+}
+
+@keyframes spinRune {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseCrystal {
+  0%, 100% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 10px #fff); }
+}
+
+.loading-title-v2 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 3rem;
+  color: #fff;
+  text-shadow: 4px 4px 0 #000, 0 0 20px var(--pixel-purple);
+  letter-spacing: 4px;
+  margin: 0;
+}
+
+/* Mana Bar */
+.mana-bar-frame {
+  position: relative;
+  width: 400px;
+  height: 40px;
+  background: #1a072a;
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.mana-bar-track {
+  flex: 1;
+  height: 100%;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+.mana-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a148c, #8e24aa, #ba68c8);
+  position: relative;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 20px rgba(186, 104, 200, 0.5);
+}
+
+.mana-glare {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: #fff;
+  opacity: 0.8;
+  box-shadow: 0 0 10px #fff;
+}
+
+.mana-value {
+  position: absolute;
+  right: 10px;
+  top: -30px;
+  color: var(--pixel-gold);
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.loading-tip-container {
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-tip-text {
+  color: #aaa;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  max-width: 500px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* --- NEW MENU REDESIGN: CRYSTAL FORGE --- */
+.menu-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column; /* Vertical Layout */
+  align-items: center;
+  justify-content: center; /* Perfect vertical centering */
+  padding: 0;
+  background: radial-gradient(circle at center, rgba(46, 0, 77, 0.4) 0%, rgba(10, 2, 20, 0.95) 100%);
+  overflow: hidden;
+  z-index: 100;
+  gap: 40px; 
+}
+
+.title-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  align-items: center; 
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* --- MAGIC MOTES PARTICLES --- */
+.magic-mote {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--pixel-gold);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 5;
+  animation: drift 10s infinite linear;
+}
+
+@keyframes drift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.6; }
+  80% { opacity: 0.6; }
+  100% { transform: translate(100px, -200px) rotate(360deg); opacity: 0; }
+}
+
+.title-glow-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%; /* Center aura with the text */
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(140, 82, 255, 0.3) 0%, transparent 70%);
+  filter: blur(60px);
+  z-index: -1;
+  animation: auraPulse 8s infinite alternate ease-in-out;
+}
+
+.menu-title-v2 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 4.8rem; /* Larger again to standout */
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 
+    0 0 25px rgba(140, 82, 255, 1),
+    0 0 50px rgba(140, 82, 255, 0.6),
+    8px 8px 0 #000;
+  margin: 0;
+  letter-spacing: -3px;
+  animation: titleFloat 4s infinite ease-in-out;
+}
+
+@keyframes titleFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-15px) rotate(1deg); }
+}
+
+.menu-subtitle {
+  font-size: 0.8rem;
+  color: var(--pixel-gold);
+  margin-top: 20px;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  display: flex;
+   align-items: center;
+   justify-content: center; /* Center subtitle content */
+   gap: 15px;
+}
+
+.menu-subtitle::after {
+  content: '';
+  flex: 0 0 100px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pixel-gold), transparent);
+}
+
+.options-sidebar {
+  width: 600px; /* Slightly wider to allow gaps */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px; /* Significantly more space */
+  z-index: 10;
+  perspective: 1000px;
+  flex: 0 0 auto;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.crystal-button {
+  all: unset;
+  position: relative;
+  width: 100%;
+  padding: 15px 10px; /* Compact padding */
+  background: linear-gradient(135deg, rgba(30, 10, 50, 0.8), rgba(10, 5, 20, 0.95));
+  border: 2px solid rgba(255, 222, 89, 0.2); /* Thicker, better defined border */
+  box-shadow: 
+    0 4px 0 rgba(0,0,0,0.5), /* Pixel-style bottom shadow */
+    0 10px 20px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  overflow: hidden;
+  min-height: 80px; /* Smaller height */
+  gap: 8px;
+  border-radius: 4px; /* Slight rounding for elegance */
+}
+
+.crystal-button:hover {
+  background: linear-gradient(135deg, rgba(80, 20, 100, 0.8), rgba(30, 10, 60, 0.95));
+  border-color: var(--pixel-gold); /* Bright gold on hover */
+  transform: translateY(-4px); /* Lift up effect instead of side */
+  box-shadow: 
+    0 8px 0 rgba(0,0,0,0.6), /* Deepen pixel shadow */
+    0 0 20px rgba(255, 222, 89, 0.2);
+}
+
+.crystal-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+
+.crystal-button::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--pixel-gold);
+  transform: scaleY(0);
+  transition: transform 0.3s;
+  transform-origin: bottom;
+}
+
+
+.shimmer-effect {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 222, 89, 0.2),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: 0.6s;
+}
+
+.crystal-button:hover .shimmer-effect {
+  left: 150%;
+}
+
+
+.crystal-button:hover::after {
+  transform: scaleY(1);
+}
+
+.btn-icon-v2 {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 222, 89, 0.15);
+  border: 1px solid rgba(255, 222, 89, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0; /* No margin right since vertical stack */
+  margin-bottom: 5px;
+  color: var(--pixel-gold);
+  transition: 0.3s;
+  border-radius: 50%; /* Optional: round icons for grid look */
+}
+
+.crystal-button:hover .btn-icon-v2 {
+  background: rgba(255, 222, 89, 0.9);
+  color: #1a072a;
+  box-shadow: 0 0 15px rgba(255, 222, 89, 0.6);
+  /* Removed scale transformation */
+}
+
+/* Fix for PNG icons to match SVG behavior on hover */
+.crystal-button:hover .btn-icon-v2 img {
+  filter: brightness(0.1) sepia(1) hue-rotate(250deg) saturate(2); /* Dark purple silhouette effect */
+  transition: all 0.3s ease;
+}
+
+.btn-text-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center text */
+}
+
+.btn-label-v2 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.btn-desc-v2 {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.settings-btn-v2 {
+  position: absolute;
+  top: 40px; /* Moved to top */
+  right: 40px;
+  width: 60px;
+  height: 60px;
+  border-radius: 5px; /* Square pixel look */
+  background: rgba(30, 10, 50, 0.8);
+  border: 2px solid var(--pixel-gold);
+  color: var(--pixel-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 50;
+}
+
+.exit-btn-v2 {
+  position: absolute;
+  top: 40px; /* Top Left */
+  left: 40px;
+  width: 60px;
+  height: 60px;
+  border-radius: 5px;
+  background: rgba(30, 10, 50, 0.8);
+  border: 2px solid #ff4444; /* Red border for exit */
+  color: #ff4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 50;
+}
+
+.exit-btn-v2:hover {
+  background: #ff4444;
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.6);
+}
+
+.settings-btn-v2:hover {
+  background: var(--pixel-gold);
+  color: #000;
+  transform: scale(1.05);
+}
+
+.loading-dots {
+  display: flex;
+  gap: 12px;
+  margin-top: 50px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background: var(--pixel-gold);
+  animation: dotBlink 1.4s infinite alternate;
+}
+
+@keyframes dotBlink {
+  from { opacity: 0.2; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 5px var(--pixel-gold)); }
+}
+
+.crystal-button.exit {
+  opacity: 0.6;
+}
+
+.crystal-button.exit:hover {
+  opacity: 1;
+  border-color: #ff4444;
+}
+
+.crystal-button.exit::after {
+  background: #ff4444;
+}
+
+/* --- GAME OVER RETRO ARCADE STYLES --- */
+.game-over-arcade-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 5, 25, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+/* CRT Scanlines Effect */
+.arcade-scanlines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.2) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.game-over-retro-panel {
+  background: #2e004d;
+  border: 10px double var(--pixel-gold);
+  padding: 4rem;
+  box-shadow: 0 0 0 10px #000, 0 20px 0 0 rgba(0,0,0,0.4);
+  text-align: center;
+  position: relative;
+  z-index: 20;
+}
+
+.retro-ghost {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  filter: drop-shadow(0 0 10px var(--pixel-purple-light));
+}
+
+.retro-title {
+  font-size: 5rem;
+  color: #ff4444;
+  text-shadow: 6px 6px 0px #000;
+  margin-bottom: 2rem;
+  letter-spacing: 12px;
+}
+
+.retro-divider {
+  width: 100%;
+  height: 8px;
+  background: var(--pixel-gold-dark);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 0 #000;
+}
+
+.retro-msg {
+  color: #fff;
+  font-size: 0.9rem;
+  margin-bottom: 3rem;
+  letter-spacing: 3px;
+}
+
+.retro-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 3.5rem;
+  background: rgba(0,0,0,0.3);
+  padding: 1.5rem;
+  border: 4px solid #000;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 4rem;
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+.stat-value {
+  color: var(--pixel-gold);
+}
+
+.arcade-btn {
+  all: unset;
+  padding: 18px 24px;
+  background: #333;
+  color: #fff;
+  border: 4px solid #000;
+  box-shadow: inset -4px -4px 0 #1a1a1a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  transition: all 0.1s;
+}
+
+.arcade-btn.primary {
+  background: #ffde59;
+  color: #000;
+  box-shadow: inset -4px -4px 0 #c5a028;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.insert-coin-prompt {
+  margin-top: 3rem;
+  font-size: 0.6rem;
+  color: #666;
+  letter-spacing: 4px;
+  animation: flicker 1.5s infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* --- IN-GAME UI & PAUSE --- */
+.in-game-ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 200;
+}
+
+.top-left-controls {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.ui-control-btn {
+  all: unset;
+  width: 44px;
+  height: 44px;
+  background: rgba(46, 0, 77, 0.82);
+  border: 3px solid #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #000;
+  backdrop-filter: blur(4px);
+  transition: all 0.1s;
+}
+
+.ui-control-btn:hover {
+  background: #4a148c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #000;
+}
+
+.ui-control-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #000;
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  z-index: 300;
+}
+
+.crystal-pause-modal {
+  background: linear-gradient(135deg, rgba(20, 5, 40, 0.95), rgba(10, 2, 20, 0.98));
+  border: 4px solid var(--pixel-gold);
+  padding: 50px;
+  text-align: center;
+  box-shadow: 
+    0 0 0 4px #000,
+    0 0 50px rgba(0,0,0,0.8),
+    inset 0 0 30px rgba(140, 82, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 420px; /* Reduced from 550px for a more compact look */
+  max-width: 90vw;
+  overflow: hidden;
+}
+
+.crystal-button.pause-btn {
+  padding: 16px 24px; 
+  width: 340px; /* Narrower width to fit content snugly */
+}
+
+.crystal-button.pause-btn .btn-label-v2 {
+  font-size: 0.8rem; /* Slightly smaller text for the compact layout */
+}
+
+.crystal-button.pause-btn .btn-desc-v2 {
+  font-size: 0.6rem;
+}
+
+.crystal-button.pause-btn:hover {
+  transform: translateX(8px);
+  box-shadow: -8px 8px 15px rgba(0,0,0,0.8);
+}
+
+.crystal-pause-modal::before {
+  content: '';
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border: 2px solid #000;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.pause-title {
+  font-family: 'Press Start 2P', cursive;
+  color: #fff;
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+  text-shadow: 
+    4px 4px 0 #000,
+    0 0 20px var(--pixel-purple);
+  letter-spacing: -2px;
+  text-transform: uppercase;
+}
+
+.pause-options {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  align-items: center; /* Centered buttons for a balanced look */
+}
+
+/* --- CHARACTER LOBBY STYLES --- */
+.lobby-container {
+  position: absolute;
+  inset: 0;
+  background-color: #0d0416;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.lobby-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(140, 82, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 82, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.lobby-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 900px;
+  /* Removed fixed height 80% to allow natural centering */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.lobby-title {
+  font-family: 'Press Start 2P', cursive;
+  color: var(--pixel-gold);
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  text-shadow: 0 0 20px rgba(255, 222, 89, 0.5);
+  letter-spacing: 4px;
+}
+
+.character-display-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.character-card {
+  width: 400px;
+  background: linear-gradient(135deg, rgba(20, 5, 40, 0.9), rgba(10, 2, 20, 0.95));
+  border: 4px solid var(--pixel-gold-dark);
+  box-shadow: 0 0 50px rgba(0,0,0,0.5);
+  padding: 4px; /* inner border spacing */
+}
+
+.card-inner-frame {
+  border: 2px solid rgba(255, 222, 89, 0.3);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.char-portrait-container {
+  width: 150px;
+  height: 150px;
+  background: #1a072a;
+  border: 4px solid #000;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+.char-glow {
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 0 30px rgba(140, 82, 255, 0.4);
+  animation: pulseGlow 3s infinite alternate;
+}
+
+.char-image {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes pulseGlow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.char-info {
+  text-align: center;
+  width: 100%;
+}
+
+.char-name {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+.char-role {
+  color: var(--pixel-purple-light);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.char-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-icon {
+  color: var(--pixel-gold);
+}
+
+.stat-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #000;
+  border: 1px solid #333;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  position: relative;
+}
+
+.stat-bar-fill.atk { background: #ff4444; }
+.stat-bar-fill.def { background: #4444ff; }
+.stat-bar-fill.mag { background: #aa00ff; }
+
+.char-desc {
+  font-size: 0.7rem;
+  color: #aaa;
+  line-height: 1.6;
+  font-family: inherit;
+}
+
+.nav-arrow {
+  background: none;
+  border: none;
+  color: var(--pixel-gold-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.nav-arrow:hover {
+  color: var(--pixel-gold);
+  transform: scale(1.2);
+  text-shadow: 0 0 10px var(--pixel-gold);
+}
+
+.nav-arrow:active {
+  transform: scale(0.9);
+}
+
+.lobby-controls {
+  display: flex;
+  gap: 20px; /* Reduced gap */
+  margin-top: 1.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.lobby-controls .crystal-button {
+  display: flex;
+  flex-direction: row; /* Force row layout */
+  align-items: center;
+  gap: 10px;
+  font-size: 0.7rem; 
+  min-width: 140px; 
+  max-width: 200px;
+  padding: 10px 20px; 
+  justify-content: center;
+  height: auto; 
+  min-height: 40px; /* Override large generic min-height */
+  border-radius: 4px;
+}
+
+.lobby-controls .crystal-button:hover {
+  transform: translateY(-2px); /* Subtle lift instead of large side move */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
