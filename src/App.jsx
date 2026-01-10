@@ -1,9 +1,10 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, Suspense, lazy, useEffect } from 'react';
 import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
 import GameOver from './components/GameOver';
 import PixelParticles from './components/PixelParticles';
 import { AnimatePresence, motion } from 'framer-motion';
+import { GAME_CONFIG } from './config/constants';
 
 import WinScreen from './components/WinScreen';
 import InGameUI from './components/InGameUI';
@@ -12,13 +13,56 @@ import CharacterLobby from './components/CharacterLobby';
 // Lazy load the game engine
 const GameContainer = lazy(() => import('./core/GameContainer'));
 
+const toggleFullScreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+    });
+  }
+};
+
 function App() {
   const [gameState, setGameState] = useState('loading'); // loading, menu, playing, gameover, win
   const [gameKey, setGameKey] = useState(0); // For forcing re-mount on retry
   const [isPaused, setIsPaused] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(1);
+  const [scale, setScale] = useState(1);
+
+  // Resolution Scaling Logic
+  useEffect(() => {
+    const handleResize = () => {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const scaleX = windowWidth / GAME_CONFIG.LOGICAL_WIDTH;
+      const scaleY = windowHeight / GAME_CONFIG.LOGICAL_HEIGHT;
+      const newScale = Math.min(scaleX, scaleY);
+      setScale(newScale);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial calculation
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // F11 Fullscreen Toggle
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => console.warn(err));
+        } else {
+          document.exitFullscreen().catch(err => console.warn(err));
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleStartGame = () => {
+    toggleFullScreen();
     setGameKey(prev => prev + 1); 
     setGameState('playing');
     setIsPaused(false);
@@ -30,8 +74,8 @@ function App() {
   };
 
   const handleWin = () => {
-    if (currentLevel < 2) {
-        setCurrentLevel(2);
+    if (currentLevel < 4) {
+        setCurrentLevel(prev => prev + 1);
         setGameKey(prev => prev + 1); // Forzar recarga del motor para el nuevo nivel
     } else {
         setGameState('win');
@@ -67,7 +111,23 @@ function App() {
   return (
     <div className="game-wrapper">
       <PixelParticles />
-      <div className="game-viewport">
+      
+      {/* SCALED CONTAINER: Holds both Game and UI */}
+      <div 
+        className="game-scaler"
+        style={{
+          width: GAME_CONFIG.LOGICAL_WIDTH,
+          height: GAME_CONFIG.LOGICAL_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          position: 'absolute',
+          overflow: 'hidden',
+          boxShadow: '0 0 100px rgba(0,0,0,0.8)', // Enhanced shadow
+          imageRendering: 'pixelated'
+        }}
+      >
+        <div className="vignette-overlay" />
+        
         <AnimatePresence mode="wait">
           {gameState === 'loading' && (
             <LoadingScreen key="loading" onComplete={() => setGameState('menu')} />
@@ -104,8 +164,8 @@ function App() {
                   onComplete={handleWin}
                 />
                 
-                {gameState === 'playing' && (
-                  <InGameUI 
+                {(gameState === 'playing' || gameState === 'win') && (
+                  <InGameUI
                     onBack={handleExit}
                     onTogglePause={togglePause}
                     isPaused={isPaused}
@@ -132,6 +192,7 @@ function App() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
                     >
                       <button className="pixel-button secondary" onClick={handleExit}>
                         VOLVER AL MENÚ

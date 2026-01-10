@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Shield, Zap, Heart, Sword, ChevronLeft, ChevronRight, Lock, Crosshair, Skull } from 'lucide-react';
-import wizardImg from '../assets/wizard.png';
-import lobbyMusic from '../assets/seleccion de personaje.mp3';
+import { ArrowLeft, User, Shield, Zap, Sword, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import wizardImg from '../assets/images/characters/MAGO_DE_BATALLA_2D-removebg-preview.png';
+import elfImg from '../assets/images/characters/CAZADORA_ELFO-removebg-preview.png';
+import lobbyMusic from '../assets/audio/music/lobby.mp3';
+import clickSfx from '../assets/audio/sfx/click.mp3';
 
 const CharacterLobby = ({ onBack, onSelect }) => {
   const [selectedChar, setSelectedChar] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     const audio = new Audio(lobbyMusic);
@@ -51,12 +54,11 @@ const CharacterLobby = ({ onBack, onSelect }) => {
     },
     {
       id: 2,
-      name: "CAZADOR ELFO",
+      name: "CAZADORA ELFO",
       role: "TIRADOR DE ARCO",
-      description: "Próximamente: Maestro de la precisión y el ataque a distancia.",
+      description: "Maestra de la precisión y el ataque a distancia, guardiana de los bosques antiguos.",
       stats: { attack: 75, defense: 30, magic: 30, speed: 90 },
-      image: null,
-      locked: true
+      image: elfImg
     },
     {
       id: 3,
@@ -89,10 +91,12 @@ const CharacterLobby = ({ onBack, onSelect }) => {
 
   const handleNext = () => {
     setSelectedChar((prev) => (prev + 1) % characters.length);
+    setShowInfo(false); // Reset info on change
   };
 
   const handlePrev = () => {
     setSelectedChar((prev) => (prev - 1 + characters.length) % characters.length);
+    setShowInfo(false);
   };
 
   return (
@@ -102,106 +106,139 @@ const CharacterLobby = ({ onBack, onSelect }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      <div className="lobby-bg-image" />
       <div className="lobby-bg-grid" />
       
       <div className="lobby-content">
         <motion.h1 
           className="lobby-title"
-          initial={{ y: -50 }}
-          animate={{ y: 0 }}
+          initial={{ y: -30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
         >
           SELECCIÓN DE HÉROE
         </motion.h1>
 
-        <div className="character-display-area">
-          <button className="nav-arrow left" onClick={handlePrev}>
-            <ChevronLeft size={40} />
+        <div className="char-selection-stage">
+          <button className="nav-arrow left" onClick={() => { new Audio(clickSfx).play(); handlePrev(); }}>
+            <ChevronLeft size={48} color="#fff" />
           </button>
 
-          {/* Character Card */}
+          {/* LARGE HERO SHOWCASE CONTAINER */}
           <motion.div 
-            className="character-card active"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            className="hero-showcase-container"
+            key={selectedChar}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.4 }}
           >
-            <div className="card-inner-frame">
-              <div className="char-portrait-container">
-                <div className="char-glow" />
-                {characters[selectedChar].image ? (
-                  <img 
-                    src={characters[selectedChar].image} 
-                    alt={characters[selectedChar].name} 
-                    className="char-image"
-                  />
-                ) : (
-                  <Lock size={64} color="#555" style={{zIndex: 5}} />
-                )}
-              </div>
-
-              <div className="char-info">
-                <h2 className="char-name">{characters[selectedChar].name}</h2>
-                <span className="char-role">{characters[selectedChar].role}</span>
-                
-                <div className="char-stats">
-                  {/* Stats bars logic remains same, just ensuring it renders per character */}
-                  <div className="stat-row">
-                    <Sword size={16} className="stat-icon" />
-                    <div className="stat-bar-track">
-                      <motion.div 
-                        className="stat-bar-fill atk" 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${characters[selectedChar].stats.attack}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="stat-row">
-                    <Shield size={16} className="stat-icon" />
-                    <div className="stat-bar-track">
-                      <motion.div 
-                        className="stat-bar-fill def" 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${characters[selectedChar].stats.defense}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="stat-row">
-                    <Zap size={16} className="stat-icon" />
-                    <div className="stat-bar-track">
-                      <motion.div 
-                        className="stat-bar-fill mag" 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${characters[selectedChar].stats.magic}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <p className="char-desc">{characters[selectedChar].description}</p>
-              </div>
+            {/* 1. Large Image Area (The container requested) */}
+            <div className="hero-image-wrapper">
+               {/* This is where the large beautiful images will go */}
+               <div className="hero-image-placeholder">
+                  {characters[selectedChar].image ? (
+                     <img 
+                       src={characters[selectedChar].image} 
+                       alt={characters[selectedChar].name} 
+                       className="hero-full-img"
+                     />
+                  ) : (
+                     <div className="locked-hero-state">
+                         <Lock size={80} color="#555" />
+                         <span>CLASIFICADO</span>
+                     </div>
+                  )}
+               </div>
+               
+               {/* Visual overlay for depth */}
+               <div className="hero-vignette" />
             </div>
-          </motion.div>
 
-          <button className="nav-arrow right" onClick={handleNext}>
-            <ChevronRight size={40} />
+            {/* 2. Info Panel (Floating/Overlay) - Now Conditional */}
+            <AnimatePresence>
+              {showInfo && (
+                <motion.div 
+                  className="hero-info-panel"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                   <div className="hero-header-group">
+                     <h1 className="hero-name-large">{characters[selectedChar].name}</h1>
+                     <div className="hero-role-badge">
+                        <Sword size={16} />
+                        <span>{characters[selectedChar].role}</span>
+                     </div>
+                   </div>
+
+                   <p className="hero-lore">{characters[selectedChar].description}</p>
+                   
+                   <div className="hero-stats-grid">
+                      <div className="stat-unit">
+                         <span className="stat-label">ATK</span>
+                         <div className="stat-track-large">
+                            <motion.div className="stat-fill-large atk" initial={{width: 0}} animate={{width: `${characters[selectedChar].stats.attack}%`}} />
+                         </div>
+                      </div>
+                      <div className="stat-unit">
+                         <span className="stat-label">DEF</span>
+                         <div className="stat-track-large">
+                            <motion.div className="stat-fill-large def" initial={{width: 0}} animate={{width: `${characters[selectedChar].stats.defense}%`}} />
+                         </div>
+                      </div>
+                      <div className="stat-unit">
+                         <span className="stat-label">MAG</span>
+                         <div className="stat-track-large">
+                            <motion.div className="stat-fill-large mag" initial={{width: 0}} animate={{width: `${characters[selectedChar].stats.magic}%`}} />
+                         </div>
+                      </div>
+                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+          
+          {/* COMPACT Info Toggle Button - Moved far right, floating above panel */}
+          <div style={{position: 'absolute', bottom: '20px', right: '50px', zIndex: 100}}>
+             <button 
+                className="crystal-button secondary" 
+                style={{
+                  minWidth: 'auto', 
+                  padding: '8px 16px', 
+                  height: '36px',
+                  gap: '8px',
+                  borderRadius: '20px',
+                  background: 'rgba(0,0,0,0.8)', // Ensure contrast if overlapping panel
+                  border: '1px solid var(--pixel-gold)'
+                }}
+                onClick={() => { new Audio(clickSfx).play(); setShowInfo(!showInfo); }}
+             >
+                <User size={14} color="var(--pixel-gold)" />
+                <span style={{fontSize: '0.6rem', color: 'var(--pixel-gold)'}}>{showInfo ? 'CERRAR' : 'INFO'}</span>
+             </button>
+          </div>
+
+          <button className="nav-arrow right" onClick={() => { new Audio(clickSfx).play(); handleNext(); }}>
+            <ChevronRight size={48} color="#fff" />
           </button>
         </div>
 
         <div className="lobby-controls">
-          <button className="crystal-button secondary" onClick={onBack}>
+          <button className="crystal-button secondary" onClick={() => { new Audio(clickSfx).play(); onBack(); }}>
             <ArrowLeft size={20} />
             <span>VOLVER</span>
           </button>
           
           <button 
             className={`crystal-button ${characters[selectedChar].locked ? 'locked' : 'primary'}`} 
-            onClick={() => !characters[selectedChar].locked && onSelect(characters[selectedChar])}
+            onClick={() => { new Audio(clickSfx).play(); !characters[selectedChar].locked && onSelect(characters[selectedChar]); }}
             disabled={characters[selectedChar].locked}
             style={{ opacity: characters[selectedChar].locked ? 0.5 : 1, cursor: characters[selectedChar].locked ? 'not-allowed' : 'pointer' }}
           >
             {characters[selectedChar].locked ? <Lock size={16} /> : null}
             <span>{characters[selectedChar].locked ? 'BLOQUEADO' : 'SELECCIONAR'}</span>
-            {!characters[selectedChar].locked && <div className="shimmer-effect" />}
           </button>
         </div>
       </div>

@@ -1,35 +1,47 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, RefreshCw, Home } from 'lucide-react';
+import clickSfx from '../assets/audio/sfx/click.mp3';
 
 const WinScreen = ({ onRestart, onExit }) => {
   return (
     <motion.div 
-      className="game-overlay win"
+      className="game-over-arcade-overlay"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      <div className="arcade-scanlines" />
+
       <motion.div 
-        className="game-overlay-content"
-        initial={{ scale: 0.8, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 12 }}
+        className="game-over-retro-panel"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        <Trophy size={64} color="#ffde59" style={{ marginBottom: '20px' }} />
-        <h2 className="overlay-title win-text">¡PORTAL CRUZADO!</h2>
-        <p className="overlay-subtitle">Has escapado de las cavernas con éxito.</p>
+        <Trophy size={80} color="#ffde59" style={{ marginBottom: '20px' }} />
+        <h1 className="retro-title" style={{ color: '#ffde59' }}>¡VICTORIA!</h1>
         
-        <div className="overlay-options">
-          <button className="pixel-button primary" onClick={onRestart}>
-            <RefreshCw size={20} style={{ marginRight: '10px' }} />
-            JUGAR DE NUEVO
-          </button>
+        <div className="retro-divider" />
+        
+        <p className="retro-msg">Has escapado de las cavernas con éxito.</p>
+        
+        <div className="game-over-actions">
+           <motion.button 
+            className="arcade-btn primary" 
+            onClick={() => { new Audio(clickSfx).play(); onRestart(); }}
+          >
+            <RefreshCw size={20} />
+            REINTENTAR
+          </motion.button>
           
-          <button className="pixel-button" onClick={onExit}>
-            <Home size={20} style={{ marginRight: '10px' }} />
-            MENÚ PRINCIPAL
-          </button>
+          <motion.button 
+            className="arcade-btn" 
+            onClick={() => { new Audio(clickSfx).play(); onExit(); }}
+          >
+            <Home size={20} />
+            INICIO
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>

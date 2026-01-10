@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { preloadAssets } from '../utils/AssetLoader';
+
+// Asset imports for preloading
+import swordImg from '../assets/images/ui/sword_icon.png';
+import magicIcon from '../assets/images/ui/magic_icon.png';
+import loadingBg from '../assets/images/environment/loading_screen.jpg';
+import lobbyBg from '../assets/images/environment/lobby_inner.jpg';
+import cavernMap from '../assets/images/environment/cavern_map.png';
+import cavernFitted from '../assets/images/environment/cavern_fitted.png';
+import cavernBg from '../assets/images/environment/cavern_bg.png';
+import cavernBgAlt from '../assets/images/environment/background_alt.png';
+import exitBtnImg from '../assets/images/ui/exit_button.png';
+import portalCavern from '../assets/images/environment/portal_cavern.png';
+import wizardImg from '../assets/images/characters/wizard.png';
+import menuMusic from '../assets/audio/music/menu.mp3';
+import adventureMusic from '../assets/audio/music/adventure.mp3';
+import charSelectMusic from '../assets/audio/music/lobby.mp3';
+import clickSfx from '../assets/audio/sfx/click.mp3';
 
 const LoadingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   const tips = [
     "TIP: Los cristales de maná restauran tu energía vital.",
@@ -14,67 +33,86 @@ const LoadingScreen = ({ onComplete }) => {
   ];
 
   useEffect(() => {
-    // Change tip every 1.5 seconds
+    // Assets list
+    const assetsToLoad = [
+        { type: 'image', url: swordImg },
+        { type: 'image', url: magicIcon },
+        { type: 'image', url: wizardImg },
+        { type: 'image', url: loadingBg },
+        { type: 'image', url: lobbyBg },
+        { type: 'image', url: cavernMap },
+        { type: 'image', url: cavernFitted },
+        { type: 'image', url: cavernBg },
+        { type: 'image', url: cavernBgAlt },
+        { type: 'image', url: exitBtnImg },
+        { type: 'image', url: portalCavern },
+        { type: 'audio', url: menuMusic },
+        { type: 'audio', url: adventureMusic },
+        { type: 'audio', url: charSelectMusic },
+        { type: 'audio', url: clickSfx }
+    ];
+
+    let progressValue = 0;
+    
+    // Real asset loading
+    preloadAssets(assetsToLoad, (p) => {
+        progressValue = p;
+        setProgress(p);
+    }).then(() => {
+        // Ensure progress is visually 100% before allowing completion
+        setProgress(100);
+        setTimeout(() => setAssetsLoaded(true), 300);
+    });
+
     const tipInterval = setInterval(() => {
         setTipIndex(prev => (prev + 1) % tips.length);
-    }, 1500);
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          clearInterval(tipInterval);
-          setTimeout(onComplete, 800); 
-          return 100;
-        }
-        // Non-linear progress for realism
-        const increment = Math.random() * 3 + 0.5;
-        return Math.min(prev + increment, 100);
-      });
-    }, 50);
+    }, 2000);
 
     return () => {
-        clearInterval(interval);
         clearInterval(tipInterval);
     };
-  }, [onComplete]);
+  }, []); // Remove onComplete dependency to prevent double triggers
 
   return (
     <motion.div 
       className="loading-container-v2"
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.8 } }}
+      exit={{ opacity: 0 }}
+      onClick={() => assetsLoaded && onComplete()}
+      style={{ cursor: assetsLoaded ? 'pointer' : 'default' }}
     >
-        {/* Background Runes/Particles */}
         <div className="loading-bg-grid" />
         
         <div className="loading-content-wrapper">
-             {/* Central Rune Animation */}
             <div className="rune-spinner-container">
                 <div className="rune-circle-outer" />
                 <div className="rune-circle-inner" />
                 <div className="rune-symbol">
-                    {/* Simplified Pixel Crystal Shape using CSS borders or just a character */}
                     <div className="pixel-crystal-icon" />
                 </div>
             </div>
 
             <motion.h1 
                 className="loading-title-v2"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
             >
-                ARCANUM
+                ARCANUM: LEGACY
             </motion.h1>
 
-             {/* Mana Bar */}
             <div className="mana-bar-frame">
                 <div className="mana-bar-track">
                     <motion.div 
                         className="mana-bar-fill" 
-                        style={{ width: `${progress}%` }}
-                        layoutId="loadingParams"
+                        initial={{ width: "0%" }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ 
+                            type: "spring", 
+                            stiffness: 40,
+                            damping: 12,
+                            mass: 1
+                        }}
                     >
                         <div className="mana-glare" />
                     </motion.div>
@@ -82,18 +120,54 @@ const LoadingScreen = ({ onComplete }) => {
                 <div className="mana-value">{Math.floor(progress)}%</div>
             </div>
 
-            {/* Dynamic Tips */}
-            <div className="loading-tip-container">
+            <div className="loading-status-area">
                 <AnimatePresence mode="wait">
-                    <motion.p 
-                        key={tipIndex}
-                        className="loading-tip-text"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                    >
-                        {tips[tipIndex]}
-                    </motion.p>
+                    {!assetsLoaded ? (
+                        <motion.div 
+                            key="tips"
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }}
+                            className="loading-tip-container"
+                        >
+                            <motion.p 
+                                key={tipIndex}
+                                className="loading-tip-text"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {tips[tipIndex]}
+                            </motion.p>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="ready"
+                            className="press-to-start"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ 
+                                type: "spring", 
+                                stiffness: 400, 
+                                damping: 10 
+                            }}
+                        >
+                            <motion.span
+                                animate={{ opacity: [0.3, 0.8, 0.3] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                style={{ 
+                                    color: '#ffffff', 
+                                    fontSize: '0.7rem', 
+                                    letterSpacing: '2px',
+                                    fontFamily: "'Press Start 2P', cursive",
+                                    textShadow: '2px 2px 0px #000'
+                                }}
+                            >
+                                TOQUE CUALQUIER LADO PARA ENTRAR
+                            </motion.span>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </div>
         </div>

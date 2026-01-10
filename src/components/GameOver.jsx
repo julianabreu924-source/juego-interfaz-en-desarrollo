@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Home, Skull, Ghost } from 'lucide-react';
+import { RefreshCw, Home, Ghost } from 'lucide-react';
+import clickSfx from '../assets/audio/sfx/click.mp3';
 
 const GameOver = ({ onRestart, onExit }) => {
   return (
@@ -15,9 +16,9 @@ const GameOver = ({ onRestart, onExit }) => {
 
       <motion.div 
         className="game-over-retro-panel"
-        initial={{ scale: 0, opacity: 0 }}
+        initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", damping: 15, stiffness: 200 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
         {/* Floating Ghost Decoration */}
         <motion.div
@@ -35,7 +36,7 @@ const GameOver = ({ onRestart, onExit }) => {
         <motion.p 
           className="retro-msg"
           animate={{ opacity: [1, 0.5, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
+          transition={{ duration: 2, repeat: Infinity }}
         >
           TU VIAJE TERMINÓ AQUÍ...
         </motion.p>
@@ -43,7 +44,7 @@ const GameOver = ({ onRestart, onExit }) => {
         <div className="retro-stats">
           <div className="stat-row">
             <span>NIVEL:</span>
-            <span className="stat-value">ZONA ARCANUM 1</span>
+            <span className="stat-value">ZONA RUNES 1</span>
           </div>
           <div className="stat-row">
             <span>DESTINO:</span>
@@ -54,9 +55,7 @@ const GameOver = ({ onRestart, onExit }) => {
         <div className="game-over-actions">
           <motion.button 
             className="arcade-btn primary" 
-            onClick={onRestart}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 15px #ffde59" }}
-            whileTap={{ scale: 0.95 }}
+            onClick={() => { new Audio(clickSfx).play(); onRestart(); }}
           >
             <RefreshCw size={20} />
             CONTINUAR
@@ -64,9 +63,7 @@ const GameOver = ({ onRestart, onExit }) => {
           
           <motion.button 
             className="arcade-btn" 
-            onClick={onExit}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            onClick={() => { new Audio(clickSfx).play(); onExit(); }}
           >
             <Home size={20} />
             RENDIRSE

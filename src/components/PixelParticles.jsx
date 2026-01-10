@@ -40,7 +40,7 @@ const PixelParticles = () => {
 
   const createParticles = useCallback((e) => {
     const color = e.target.classList.contains('primary') ? '#ffffff' : '#ffde59';
-    const newParticles = Array.from({ length: 12 }).map(() => ({
+    const newParticles = Array.from({ length: 6 }).map(() => ({
       id: Math.random(),
       x: e.clientX,
       y: e.clientY,

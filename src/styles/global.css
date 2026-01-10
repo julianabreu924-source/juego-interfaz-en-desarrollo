@@ -44,115 +44,51 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-#root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow: hidden;
 }
 
 /* Professional Pixel Border Wrapper */
-/* Professional Pixel Rounded Border Wrapper */
 .game-wrapper {
-  position: relative;
-  padding: 16px;
-  background: var(--pixel-gold-dark);
-  margin: 20px;
-  
-  /* "Pixel Art Rounded" technique using box-shadows */
-  box-shadow: 
-    /* Layer 1: Inner Bevel (Light/Dark) */
-    inset 4px 4px 0 var(--pixel-gold),
-    inset -4px -4px 0 rgba(0,0,0,0.4),
-    
-    /* Layer 2: Main Body Extensions (Creating the cross shape) */
-    4px 0 0 var(--pixel-gold-dark),
-    -4px 0 0 var(--pixel-gold-dark),
-    0 -4px 0 var(--pixel-gold-dark),
-    0 4px 0 var(--pixel-gold-dark),
-    
-    /* Layer 3: Black Outline (Stepped) */
-    8px 0 0 #000,
-    -8px 0 0 #000,
-    0 -8px 0 #000,
-    0 8px 0 #000,
-    
-    /* Corners for Outline (filling the gaps creates a rounded 2px step look) */
-    4px 4px 0 4px #000,
-    -4px 4px 0 4px #000,
-    4px -4px 0 4px #000,
-    -4px -4px 0 4px #000,
-    
-    /* Layer 4: Deep Shadow */
-    0 20px 50px rgba(0,0,0,0.9);
-    
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #000; /* Letterbox bars color */
   z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
-/* Cleanup old corner pseudo-elements as they are replaced by CSS shadows */
-.game-wrapper::after, .game-wrapper::before {
-  display: none;
-}
 
 .game-viewport {
   position: relative;
-  width: 1200px;
-  height: 700px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background-color: var(--pixel-bg);
-  /* Inner deeply inset frame */
-  box-shadow: 
-    inset 6px 6px 0 #000,
-    inset -6px -6px 0 #000;
-  border: none; /* Removing solid border in favor of shadow */
+  border: none; 
 }
 
-/* Settings Gear Style */
-.settings-gear-container {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 100;
-}
-
-.settings-gear-button {
-  all: unset;
-  cursor: pointer;
-  color: var(--pixel-gold);
-  filter: drop-shadow(0 4px 0px rgba(0,0,0,0.5));
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.settings-gear-button:hover {
-  transform: rotate(90deg) scale(1.2);
-  color: #fff;
-}
-
-.menu-options {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 420px;
-  align-items: stretch;
-}
-
-.menu-footer {
-  position: absolute;
-  bottom: 2.5rem;
-  color: var(--pixel-gold-dark);
-  font-size: 0.7rem;
-  letter-spacing: 4px;
-  opacity: 0.6;
-}
 
 .dev-ui-overlay {
   position: absolute;
   bottom: 20px;
   right: 20px;
   z-index: 1000;
+}
+
+.vignette-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  z-index: 9000; /* Above mostly everything but particles */
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.5); 
 }
 
 /* --- NEW CRYSTAL MANA LOADING SCREEN --- */
@@ -164,9 +100,17 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #050210;
+  background: url("../assets/images/environment/loading_screen.jpg") center/cover no-repeat;
   z-index: 2000;
   overflow: hidden;
+}
+
+.loading-container-v2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 2, 16, 0.7);
+  z-index: 1;
 }
 
 .loading-bg-grid {
@@ -230,8 +174,13 @@ body {
 }
 
 @keyframes pulseCrystal {
-  0%, 100% { transform: scale(0.8); opacity: 0.8; }
-  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 10px #fff); }
+  0%, 100% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 10px rgba(255, 222, 89, 0.5)); }
+}
+
+@keyframes auraPulse {
+  from { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 .loading-title-v2 {
@@ -308,6 +257,26 @@ body {
   line-height: 1.5;
 }
 
+.loading-status-area {
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.press-to-start {
+  cursor: pointer;
+  padding: 10px 20px;
+  background: transparent;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.press-to-start:hover {
+  transform: translateY(-2px);
+}
+
 /* --- NEW MENU REDESIGN: CRYSTAL FORGE --- */
 .menu-container {
   position: absolute;
@@ -315,12 +284,13 @@ body {
   display: flex;
   flex-direction: column; /* Vertical Layout */
   align-items: center;
-  justify-content: center; /* Perfect vertical centering */
-  padding: 0;
-  background: radial-gradient(circle at center, rgba(46, 0, 77, 0.4) 0%, rgba(10, 2, 20, 0.95) 100%);
+  justify-content: flex-start; /* Align to top instead of center */
+  padding-top: 100px; /* Push title down to desired "high" position */
+  background: url("../assets/images/environment/lobby_inner.jpg") center/cover no-repeat,
+    radial-gradient(circle at center, rgba(46, 0, 77, 0.4) 0%, rgba(10, 2, 20, 0.95) 100%);
   overflow: hidden;
   z-index: 100;
-  gap: 40px; 
+  gap: 40px;
 }
 
 .title-section {
@@ -331,7 +301,7 @@ body {
   position: relative;
   align-items: center; 
   text-align: center;
-  margin-top: 20px;
+  margin-top: 0; /* Removed margin since we use container padding */
 }
 
 /* --- MAGIC MOTES PARTICLES --- */
@@ -347,11 +317,28 @@ body {
   animation: drift 10s infinite linear;
 }
 
+.title-mote {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 5;
+  animation: drift 10s infinite linear;
+}
+
+.left-buttons,
+.right-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @keyframes drift {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-  20% { opacity: 0.6; }
-  80% { opacity: 0.6; }
-  100% { transform: translate(100px, -200px) rotate(360deg); opacity: 0; }
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(100px, -200px) rotate(360deg); }
 }
 
 .title-glow-aura {
@@ -378,13 +365,9 @@ body {
     8px 8px 0 #000;
   margin: 0;
   letter-spacing: -3px;
-  animation: titleFloat 4s infinite ease-in-out;
+  /* Removed floating animation to keep title static */
 }
 
-@keyframes titleFloat {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-15px) rotate(1deg); }
-}
 
 .menu-subtitle {
   font-size: 0.8rem;
@@ -407,92 +390,63 @@ body {
 }
 
 .options-sidebar {
-  width: 600px; /* Slightly wider to allow gaps */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px; /* Significantly more space */
+  position: absolute;
+  bottom: 90px;
+  left: 200px;
+  right: 200px;
+  display: flex;
+  justify-content: space-between;
   z-index: 10;
-  perspective: 1000px;
-  flex: 0 0 auto;
-  justify-content: center;
-  margin-top: 30px;
 }
 
 .crystal-button {
   all: unset;
   position: relative;
   width: 100%;
-  padding: 15px 10px; /* Compact padding */
-  background: linear-gradient(135deg, rgba(30, 10, 50, 0.8), rgba(10, 5, 20, 0.95));
-  border: 2px solid rgba(255, 222, 89, 0.2); /* Thicker, better defined border */
-  box-shadow: 
-    0 4px 0 rgba(0,0,0,0.5), /* Pixel-style bottom shadow */
-    0 10px 20px rgba(0,0,0,0.4);
-  backdrop-filter: blur(12px);
+  padding: 20px 15px; /* More padding for rectangular shape */
+  background: #0e021a; /* Solid dark background */
+  border: none;
+  box-shadow:
+    /* Inner Bevel - Solidified */
+    inset 2px 2px 0 #3d1c5c,
+    inset -2px -2px 0 rgba(0,0,0,0.4),
+    /* Outline */
+    4px 0 0 #000,
+    -4px 0 0 #000,
+    0 -4px 0 #000,
+    0 4px 0 #000,
+    /* Corners */
+    2px 2px 0 2px #000,
+    -2px 2px 0 2px #000,
+    2px -2px 0 2px #000,
+    -2px -2px 0 2px #000,
+    /* Deep Shadow */
+    0 8px 20px rgba(0,0,0,0.6);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.2s ease;
   overflow: hidden;
-  min-height: 80px; /* Smaller height */
+  height: 80px; /* Fixed height for uniform button sizes */
   gap: 8px;
-  border-radius: 4px; /* Slight rounding for elegance */
+  border-radius: 0; /* Remove rounding for pixel look */
+  max-width: 250px; /* Limit width to prevent overflow */
 }
 
 .crystal-button:hover {
-  background: linear-gradient(135deg, rgba(80, 20, 100, 0.8), rgba(30, 10, 60, 0.95));
-  border-color: var(--pixel-gold); /* Bright gold on hover */
-  transform: translateY(-4px); /* Lift up effect instead of side */
+  background: #1a073a; /* Slightly lighter purple on hover */
   box-shadow: 
-    0 8px 0 rgba(0,0,0,0.6), /* Deepen pixel shadow */
-    0 0 20px rgba(255, 222, 89, 0.2);
+    0 10px 25px rgba(0,0,0,0.5); /* Simple shadow */
 }
 
 .crystal-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+  transform: translateY(2px);
 }
 
-.crystal-button::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--pixel-gold);
-  transform: scaleY(0);
-  transition: transform 0.3s;
-  transform-origin: bottom;
-}
-
-
-.shimmer-effect {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 222, 89, 0.2),
-    transparent
-  );
-  transform: skewX(-20deg);
-  transition: 0.6s;
-}
-
-.crystal-button:hover .shimmer-effect {
-  left: 150%;
-}
-
-
-.crystal-button:hover::after {
-  transform: scaleY(1);
-}
+/* Removed extra layers */
 
 .btn-icon-v2 {
   width: 40px;
@@ -530,10 +484,16 @@ body {
 
 .btn-label-v2 {
   font-family: 'Press Start 2P', cursive;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   color: #fff;
   margin-bottom: 6px;
-  letter-spacing: 1px;
+  letter-spacing: -1px;
+  text-shadow: 3px 3px 0 #000, 0 0 15px rgba(140, 82, 255, 0.8), 0 0 30px rgba(140, 82, 255, 0.4);
+  transition: color 0.3s ease;
+}
+
+.crystal-button:hover .btn-label-v2 {
+  color: var(--pixel-gold);
 }
 
 .btn-desc-v2 {
@@ -543,60 +503,43 @@ body {
   letter-spacing: 2px;
 }
 
-.settings-btn-v2 {
+.settings-btn-v2, .exit-btn-v2 {
   position: absolute;
-  top: 40px; /* Moved to top */
-  right: 40px;
-  width: 60px;
-  height: 60px;
-  border-radius: 5px; /* Square pixel look */
-  background: rgba(30, 10, 50, 0.8);
-  border: 2px solid var(--pixel-gold);
-  color: var(--pixel-gold);
+  top: 40px;
+  width: 54px;
+  height: 54px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%; /* Circle for modern look */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s;
-  z-index: 50;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100;
+  color: #fff;
+  backdrop-filter: blur(4px);
 }
 
-.exit-btn-v2 {
-  position: absolute;
-  top: 40px; /* Top Left */
-  left: 40px;
-  width: 60px;
-  height: 60px;
-  border-radius: 5px;
-  background: rgba(30, 10, 50, 0.8);
-  border: 2px solid #ff4444; /* Red border for exit */
-  color: #ff4444;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  z-index: 50;
+.settings-btn-v2 { right: 40px; }
+.exit-btn-v2 { left: 40px; }
+
+.settings-btn-v2:hover {
+  background: rgba(140, 82, 255, 0.2);
+  border-color: var(--pixel-gold);
+  color: var(--pixel-gold);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 0 20px rgba(140, 82, 255, 0.4);
 }
 
 .exit-btn-v2:hover {
-  background: #ff4444;
-  color: #fff;
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255, 68, 68, 0.6);
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
+  color: #ff4444;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
 }
 
-.settings-btn-v2:hover {
-  background: var(--pixel-gold);
-  color: #000;
-  transform: scale(1.05);
-}
-
-.loading-dots {
-  display: flex;
-  gap: 12px;
-  margin-top: 50px;
-}
 
 .dot {
   width: 10px;
@@ -768,7 +711,7 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 200;
+  z-index: 2100;
 }
 
 .top-left-controls {
@@ -888,7 +831,7 @@ body {
 .lobby-container {
   position: absolute;
   inset: 0;
-  background-color: #0d0416;
+  background: url("../assets/images/environment/lobby_inner.jpg") center/cover no-repeat;
   z-index: 100;
   display: flex;
   justify-content: center;
@@ -899,10 +842,19 @@ body {
 .lobby-bg-grid {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(140, 82, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(140, 82, 255, 0.03) 1px, transparent 1px);
   background-size: 60px 60px;
+  z-index: -1; /* place behind content but above background image */
+}
+
+/* Background image behind lobby */
+.lobby-bg-image {
+  position: absolute;
+  inset: 0;
+  background: url("../assets/images/environment/lobby_sky.jpg") center/cover no-repeat;
+  z-index: -2; /* farthest back */
 }
 
 .lobby-content {
@@ -1094,3 +1046,168 @@ body {
   transform: translateY(-2px); /* Subtle lift instead of large side move */
   box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
+
+/* --- NEW HERO SHOWCASE LOBBY STYLES --- */
+/* --- NEW HERO SHOWCASE LOBBY STYLES --- */
+.char-selection-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center everything */
+  width: 100%;
+  max-width: 1100px;
+  height: 480px; /* Reduced height to fit 720p with title */
+  position: relative; /* For absolute children */
+  margin: 0 auto;
+}
+
+.hero-showcase-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Removed gap as we are layering again */
+}
+
+/* 1. Large Image Wrapper (Full Center) */
+.hero-image-wrapper {
+  position: relative; 
+  width: 100%; 
+  height: 100%;
+  display: flex;
+  align-items: flex-end; 
+  justify-content: center; 
+  z-index: 1;
+}
+
+.hero-full-img {
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+  mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+  transition: all 0.3s ease;
+  transform-origin: bottom center;
+}
+
+.hero-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end; 
+  justify-content: center;
+}
+
+.locked-hero-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; 
+  color: #555;
+  gap: 20px;
+  font-family: 'Press Start 2P';
+  opacity: 0.7;
+  height: 100%;
+  padding-bottom: 50px;
+}
+
+/* 2. Info Panel Overlay (Absolute Right Side) */
+.hero-info-panel {
+  position: absolute;
+  top: 50%;
+  right: 160px; /* Moved closer to center, away from button */
+  transform: translateY(-50%);
+  width: 300px;
+  background: rgba(10, 5, 20, 0.95); /* High contrast */
+  border: 1px solid var(--pixel-gold-dark);
+  padding: 24px;
+  z-index: 20; /* Above image */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Remove side connector */
+.hero-info-panel::before {
+  display: none;
+}
+
+.hero-header-group {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.hero-name-large {
+  font-size: 1.1rem;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.hero-role-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6rem;
+  color: var(--pixel-gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero-lore {
+  font-size: 0.6rem;
+  color: #bbb;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  font-family: 'Verdana', sans-serif;
+  font-weight: 300; 
+}
+
+/* 3. Minimal Stats */
+.hero-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.stat-unit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: #888;
+  width: 30px;
+  font-family: 'Press Start 2P';
+}
+
+.stat-track-large {
+  flex: 1;
+  height: 6px;
+  background: #111;
+  border: 1px solid #333;
+  position: relative;
+  border-radius: 2px;
+}
+
+.stat-fill-large {
+  height: 100%;
+  position: relative;
+  border-radius: 1px;
+}
+
+.stat-fill-large.atk { background: linear-gradient(90deg, #ff4444, #ff8888); }
+.stat-fill-large.def { background: linear-gradient(90deg, #4444ff, #8888ff); }
+.stat-fill-large.mag { background: linear-gradient(90deg, #aa00ff, #e055ff); }

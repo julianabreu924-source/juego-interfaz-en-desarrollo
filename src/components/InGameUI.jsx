@@ -1,30 +1,30 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Pause, Play, Home, RotateCcw } from 'lucide-react';
+import { Pause, Play, Home, RotateCcw } from 'lucide-react';
+import exitBtnImg from '../assets/images/ui/exit_button.png';
+import clickSfx from '../assets/audio/sfx/click.mp3';
 
 const InGameUI = ({ onBack, onTogglePause, isPaused, onRestart }) => {
   return (
     <div className="in-game-ui-container">
       {/* Botones de Control Superior Izquierda */}
       <div className="top-left-controls">
-        <motion.button 
+        <motion.button
           className="ui-control-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onBack}
+          onClick={() => { new Audio(clickSfx).play(); onBack(); }}
           title="Volver al Menú"
+          style={{ width: '50px', height: '50px', background: 'transparent', border: 'none', boxShadow: 'none', cursor: 'pointer' }}
         >
-          <ArrowLeft size={24} />
+          <img src={exitBtnImg} alt="Volver al Menú" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
         </motion.button>
 
-        <motion.button 
+        <motion.button
           className="ui-control-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onTogglePause}
+          onClick={() => { new Audio(clickSfx).play(); onTogglePause(); }}
           title={isPaused ? "Reanudar" : "Pausar"}
+          style={{ width: '60px', height: '60px', background: 'transparent', border: 'none', cursor: 'pointer' }}
         >
-          {isPaused ? <Play size={24} /> : <Pause size={24} />}
+          {isPaused ? <Play size={30} /> : <Pause size={30} />}
         </motion.button>
       </div>
 
@@ -50,22 +50,22 @@ const InGameUI = ({ onBack, onTogglePause, isPaused, onRestart }) => {
                   id: 'resume', 
                   label: 'REANUDAR', 
                   desc: 'CONTINUAR LA BATALLA', 
-                  icon: <Play size={20} />, 
+                  icon: <Play size={24} />,
                   action: onTogglePause,
                   primary: true
                 },
-                { 
-                  id: 'restart', 
-                  label: 'REINICIAR', 
-                  desc: 'INTENTAR DE NUEVO', 
-                  icon: <RotateCcw size={20} />, 
-                  action: onRestart 
+                {
+                  id: 'restart',
+                  label: 'REINICIAR',
+                  desc: 'INTENTAR DE NUEVO',
+                  icon: <RotateCcw size={24} />,
+                  action: onRestart
                 },
-                { 
-                  id: 'exit', 
-                  label: 'ABANDONAR', 
-                  desc: 'VOLVER AL MENÚ', 
-                  icon: <Home size={20} />, 
+                {
+                  id: 'exit',
+                  label: 'ABANDONAR',
+                  desc: 'VOLVER AL MENÚ',
+                  icon: <Home size={24} />,
                   action: onBack,
                   isExit: true
                 }
@@ -73,11 +73,8 @@ const InGameUI = ({ onBack, onTogglePause, isPaused, onRestart }) => {
                 <motion.button
                   key={opt.id}
                   className={`crystal-button pause-btn ${opt.isExit ? 'exit' : ''}`}
-                  onClick={opt.action}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { new Audio(clickSfx).play(); opt.action(); }}
                 >
-                  <div className="shimmer-effect" />
                   
                   <div className="btn-icon-v2">
                     {opt.icon}
