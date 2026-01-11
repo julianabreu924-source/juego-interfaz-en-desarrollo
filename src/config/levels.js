@@ -1,9 +1,10 @@
 import { GAME_CONFIG } from './constants.js';
-import cavernBg from '../assets/images/environment/cavern_bg.png';
 import cavernBgAlt from '../assets/images/environment/background_alt.png';
 import cavernMap from '../assets/images/environment/cavern_map.png';
 import cavernFitted from '../assets/images/environment/cavern_fitted.png';
 import portalCavern from '../assets/images/environment/portal_cavern.png';
+import cavernBgAltCollision from '../assets/images/environment/background_alt.colision.png';
+import cavernFittedCollision from '../assets/images/environment/cavern_fitted.colisiones.png';
 
 export const TILE_TYPES = {
   EMPTY: 0,
@@ -59,22 +60,24 @@ const generateCavernMapWithPlatforms = (groundFactor = 0.85) => {
 
 export const LEVELS = {
   1: {
-    map: generateCavernMapWithPlatforms(0.81),
-    startX: 250,
-    startY: Math.floor(window.innerHeight * 0.81) - 40,
-    groundY: Math.floor(window.innerHeight * 0.81),
+    map: generateCavernMapWithPlatforms(0.75),
+    startX: 200,
+    startY: Math.floor(window.innerHeight * 0.65), // Attempting 65% to find the white zone
+    groundY: Math.floor(window.innerHeight * 0.75),
     onGround: true,
-    background: cavernFitted,
+    background: cavernBgAlt,
+    collisionMap: cavernBgAltCollision,
     portal: portalCavern,
     movingPlatforms: []
   },
   2: {
-    map: generateCavernMapWithPlatforms(0.75),
-    startX: 100,
-    startY: Math.floor(window.innerHeight * 0.75) - 40,
-    groundY: Math.floor(window.innerHeight * 0.75),
+    map: generateCavernMapWithPlatforms(0.81),
+    startX: 400, // Try middle-left area
+    startY: Math.floor(window.innerHeight * 0.55), // Mid-height, will be auto-corrected
+    groundY: Math.floor(window.innerHeight * 0.81),
     onGround: true,
-    background: cavernBgAlt,
+    background: cavernFitted,
+    collisionMap: cavernFittedCollision,
     portal: portalCavern,
     movingPlatforms: []
   },
@@ -85,16 +88,6 @@ export const LEVELS = {
     groundY: Math.floor(window.innerHeight * 0.85),
     onGround: true,
     background: cavernMap,
-    portal: portalCavern,
-    movingPlatforms: []
-  },
-  4: {
-    map: generateCavernMapWithPlatforms(0.70),
-    startX: 100,
-    startY: Math.floor(window.innerHeight * 0.70) - 40,
-    groundY: Math.floor(window.innerHeight * 0.70),
-    onGround: true,
-    background: cavernBg,
     portal: portalCavern,
     movingPlatforms: []
   }

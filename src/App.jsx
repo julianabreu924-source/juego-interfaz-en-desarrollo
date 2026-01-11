@@ -74,7 +74,7 @@ function App() {
   };
 
   const handleWin = () => {
-    if (currentLevel < 4) {
+    if (currentLevel <= 2) {
         setCurrentLevel(prev => prev + 1);
         setGameKey(prev => prev + 1); // Forzar recarga del motor para el nuevo nivel
     } else {
@@ -193,10 +193,58 @@ function App() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
+                      style={{ pointerEvents: 'none' }} // Allow clicks pass through to game for camera
                     >
-                      <button className="pixel-button secondary" onClick={handleExit}>
-                        VOLVER AL MENÚ
-                      </button>
+                      {/* Bottom Controls Bar */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        bottom: 20, 
+                        right: 20, 
+                        display: 'flex', 
+                        gap: '15px', 
+                        alignItems: 'center',
+                        pointerEvents: 'auto',
+                        zIndex: 9999 
+                      }}>
+                          <button 
+                            className="pixel-button secondary" 
+                            onClick={() => {
+                                setCurrentLevel(prev => Math.max(1, prev - 1));
+                                setGameKey(prev => prev + 1);
+                            }}
+                            style={{ fontSize: '12px', padding: '8px 12px' }}
+                          >
+                            ◀
+                          </button>
+                          
+                          <div style={{ 
+                            background: 'rgba(0,0,0,0.8)', 
+                            padding: '8px 12px', 
+                            color: '#fff', 
+                            fontFamily: '"Press Start 2P"',
+                            fontSize: '12px',
+                            border: '2px solid #4a4a4a'
+                          }}>
+                            NIVEL {currentLevel}
+                          </div>
+
+                          <button 
+                            className="pixel-button secondary" 
+                            onClick={() => {
+                                setCurrentLevel(prev => Math.min(3, prev + 1));
+                                setGameKey(prev => prev + 1);
+                            }}
+                            style={{ fontSize: '12px', padding: '8px 12px' }}
+                          >
+                            ▶
+                          </button>
+
+                          <div style={{ width: '10px' }} /> {/* Spacer */}
+
+                          <button className="pixel-button secondary" onClick={handleExit}>
+                            SALIR
+                          </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -4,6 +4,8 @@ import { Container, Graphics, Sprite, Text, Assets, TilingSprite } from 'pixi.js
 import { GAME_CONFIG, PLAYER_CONFIG } from '../config/constants';
 import { LEVELS, TILE_TYPES } from '../config/levels';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { loadCollisionMap, findNearestWalkablePoint } from '../game/collisionMap';
+import { movePlayer } from '../game/movement';
 
 import wizardImg from '../assets/images/characters/wizard.png';
 
@@ -15,7 +17,7 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
   const tileSize = GAME_CONFIG.TILE_SIZE;
   const isDevMode = gameState === 'dev-viewer';
 
-  const [textures, setTextures] = useState({ wizard: null, portal: null, background: null });
+  const [textures, setTextures] = useState({ wizard: null, portal: null, background: null, collision: null });
   const [loading, setLoading] = useState(true);
   
   const containerRef = useRef(null);
@@ -38,29 +40,52 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
     deathAnimationStarted: false
   });
 
+  const portalActivated = useRef(false); // Prevent multiple portal activations
+
   // Assets Management
   useEffect(() => {
     const loadAssets = async () => {
       try {
         setLoading(true);
-        const [wiz, port, bg] = await Promise.all([
-          Assets.load(wizardImg),
-          Assets.load(level.portal),
-          Assets.load(level.background)
-        ]);
+        
+        const wizardP = Assets.load(wizardImg);
+        const portalP = Assets.load(level.portal);
+        const bgP = Assets.load(level.background);
+        
+        // Match world dimensions for collision 1:1
+        // Level logic uses: level.map[0].length * tileSize
+        const worldWidth = level.map[0].length * tileSize;
+        
+        // Load collision data for logic AND texture for visualization
+        const colLogicP = level.collisionMap ? loadCollisionMap(level.collisionMap, worldWidth, height) : Promise.resolve();
+        const colTexP = level.collisionMap ? Assets.load(level.collisionMap) : Promise.resolve(null);
 
-        [wiz, bg].forEach(t => { if(t.source) t.source.scaleMode = 'nearest'; });
-        setTextures({ wizard: wiz, portal: port, background: bg });
+        const [wiz, port, bg, colTex] = await Promise.all([wizardP, portalP, bgP, colTexP, colLogicP]);
+
+        [wiz, bg, colTex].forEach(t => { if(t && t.source) t.source.scaleMode = 'nearest'; });
+        setTextures({ wizard: wiz, portal: port, background: bg, collision: colTex });
+        
+        // Auto-correct spawn position based on collision map
+        if (level.collisionMap) {
+             const corrected = findNearestWalkablePoint(player.current.x, player.current.y);
+             console.log(`[Level ${levelId}] Auto-Correction: Moving player from (${player.current.x}, ${player.current.y}) to (${corrected.x}, ${corrected.y})`);
+             player.current.x = corrected.x;
+             player.current.y = corrected.y;
+             player.current.baseY = corrected.y;
+        }
+
         setLoading(false);
       } catch (err) {
         console.error("Critical Asset Loading Error:", err);
       }
     };
     loadAssets();
-  }, [levelId, level.background, level.portal]);
+  }, [levelId, level.background, level.portal, level.collisionMap]);
 
   // Reset Player on Level Change
   useEffect(() => {
+    console.log(`🎮 Level ${levelId} initialized - Background: ${level.background}`);
+    portalActivated.current = false; // Reset portal flag for new level
     Object.assign(player.current, {
       x: level.startX,
       y: level.startY,
@@ -107,10 +132,27 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
   }, [loading, level, tileSize, isDevMode, height]);
 
   const goalPos = useMemo(() => {
+    // Standard Tile Loop
     for (let y = 0; y < level.map.length; y++) {
       for (let x = 0; x < level.map[0].length; x++) {
         if (level.map[y][x] === TILE_TYPES.GOAL) {
-          return { x: x * tileSize + tileSize/2, y: y * tileSize + tileSize/2 };
+          let gx = x * tileSize + tileSize/2;
+          let gy = y * tileSize + tileSize/2;
+          
+          // Refine portal Y on collision maps (only for Goal tiles)
+          // Specifically crucial for Level 1 transition
+          if (level.collisionMap) {
+               // Scan near the goal tile logic position
+               // We scan a bit lower/higher to snap to floor
+               const corrected = findNearestWalkablePoint(gx, gy, 300); // Increased radius for larger maps
+               if (corrected) {
+                   console.log(`Portal auto-positioned from (${gx}, ${gy}) to (${corrected.x}, ${corrected.y})`);
+                   gx = corrected.x;
+                   gy = corrected.y;
+               }
+          }
+          
+          return { x: gx, y: gy };
         }
       }
     }
@@ -151,27 +193,35 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
     if (keys['ArrowLeft'] || keys['KeyA']) { targetVx = -GAME_CONFIG.WALK_SPEED; p.direction = -1; }
     else if (keys['ArrowRight'] || keys['KeyD']) { targetVx = GAME_CONFIG.WALK_SPEED; p.direction = 1; }
     p.vx += (targetVx - p.vx) * 0.4;
-    p.x += p.vx * dt;
-
-    // X boundaries
-    const mapWidth = level.map[0].length * tileSize;
-    p.x = Math.max(20, Math.min(p.x, mapWidth - 60));
-
     // Depth movement (W / S / Arrows)
     let targetVy = 0;
     const depthSpeed = GAME_CONFIG.WALK_SPEED * 0.6;
     if (keys['KeyW'] || keys['ArrowUp']) { targetVy = -depthSpeed; }
     else if (keys['KeyS'] || keys['ArrowDown']) { targetVy = depthSpeed; }
     
-    // Smooth vertical position (depth)
-    p.baseY = p.baseY || p.y;
-    p.baseY += targetVy * dt;
+    // Updated Movement Logic with Collision Map
+    let dx = p.vx * dt;
+    let dy = targetVy * dt;
 
-    // Dynamic boundaries from level config (red lines logic)
-    const topLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.top) : height * 0.5;
-    const bottomLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.bottom) : height * 0.85;
+    if (level.collisionMap) {
+        const next = movePlayer(p.x, p.baseY, dx, dy);
+        p.x = next.x;
+        p.baseY = next.y;
+    } else {
+        // Fallback or non-collision levels
+        p.x += dx;
+        p.baseY += dy;
+        
+        // X boundaries
+        const mapWidth = level.map[0].length * tileSize;
+        p.x = Math.max(20, Math.min(p.x, mapWidth - 60));
 
-    p.baseY = Math.max(topLimit, Math.min(p.baseY, bottomLimit));
+        // Dynamic boundaries from level config (red lines logic)
+        const topLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.top) : height * 0.5;
+        const bottomLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.bottom) : height * 0.85;
+
+        p.baseY = Math.max(topLimit, Math.min(p.baseY, bottomLimit));
+    }
 
     // Jump logic (Spacebar)
     const isJumping = keys['Space'];
@@ -257,11 +307,22 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
     updateVisuals();
 
     // Check Level Complete
-    if (goalPos && !isDevMode && !player.current.deathAnimationStarted) {
+    if (goalPos && !isDevMode && !player.current.deathAnimationStarted && !portalActivated.current) {
         const p = player.current;
         const dx = (p.x + p.width / 2) - goalPos.x;
-        const dy = p.baseY - (level.groundY - 50); // Using baseY for depth check
-        if (Math.abs(dx) < 50 && Math.abs(dy) < 60) onComplete?.();
+        const dy = p.baseY - goalPos.y; // Match player base with portal Y
+        
+        // Debug: Log distance to portal occasionally
+        if (Math.random() < 0.01) {
+            console.log(`Distance to portal: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}, Portal at (${goalPos.x}, ${goalPos.y}), Player at (${p.x}, ${p.baseY})`);
+        }
+        
+        // Increased tolerance for easier portal entry
+        if (Math.abs(dx) < 100 && Math.abs(dy) < 100) {
+            console.log('🌀 Portal activated! Moving to next level...');
+            portalActivated.current = true; // Prevent multiple activations
+            onComplete?.();
+        }
     }
   });
 
@@ -278,9 +339,18 @@ const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width
             alpha={1}
           />
         )}
+        {isDevMode && textures.collision && (
+          <sprite 
+            texture={textures.collision} 
+            width={level.map[0].length * tileSize} 
+            height={height}
+            alpha={0.5}
+            zIndex={5}
+          />
+        )}
         <graphics ref={levelGraphicsRef} />
         {textures.portal && goalPos && (
-            <sprite ref={portalRef} texture={textures.portal} anchor={0.5} x={goalPos.x} y={level.groundY - 50} />
+            <sprite ref={portalRef} texture={textures.portal} anchor={0.5} x={goalPos.x} y={goalPos.y} />
         )}
         <sprite ref={spriteRef} texture={textures.wizard} anchor={{ x: 0.5, y: 1 }} visible={!isDevMode} />
       </container>
