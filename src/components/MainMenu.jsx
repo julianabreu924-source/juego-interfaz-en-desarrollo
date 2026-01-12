@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, LogOut, Map, User } from 'lucide-react';
+import { Settings, LogOut, Map, User, Sparkles, ShoppingBag } from 'lucide-react';
+import { useAudio } from '../context/AudioContext';
 
 const WizardHat = ({ size = 24 }) => (
   <svg 
@@ -18,12 +19,19 @@ const WizardHat = ({ size = 24 }) => (
     <rect x="2" y="17" width="20" height="3" />
   </svg>
 );
-import swordImg from '../assets/images/ui/sword_icon.png';
-import magicIcon from '../assets/images/ui/magic_icon.png';
+
+// Importar imágenes de botones personalizados
+import btnJugar from '../assets/images/ui/btn_jugar.png';
+import btnTutorial from '../assets/images/ui/btn_tutorial.png';
+import btnInvocacion from '../assets/images/ui/btn_invocacion.png';
+import btnConfiguracion from '../assets/images/ui/btn_configuracion.png';
+import btnTienda from '../assets/images/ui/btn_tienda.png';
+import btnPersonajes from '../assets/images/ui/btn_personajes.png';
+
 import menuMusic from '../assets/audio/music/menu.mp3';
 import clickSfx from '../assets/audio/sfx/click.mp3';
 
-const BackgroundParticles = ({ count = 80, className = "magic-mote" }) => {
+const BackgroundParticles = React.memo(({ count = 80, className = "magic-mote" }) => {
   const particles = useMemo(() => [...Array(count)].map((_, i) => ({
     id: i,
     left: `${Math.random() * 90}%`,
@@ -36,43 +44,52 @@ const BackgroundParticles = ({ count = 80, className = "magic-mote" }) => {
     <div key={p.id} className={className} 
          style={{ left: p.left, top: p.top, animationDelay: p.delay, transform: `scale(${p.scale})` }} />
   ));
-};
+});
 
-const MenuButton = ({ opt, isHovered, onHover, onAction }) => (
+const MenuButton = React.memo(({ opt, isHovered, onHover, onAction }) => {
+  const { playSfx } = useAudio();
+  return (
+  <motion.div className="menu-btn-wrapper">
     <motion.button
-      className={`crystal-button ${opt.exit ? 'exit' : ''}`}
+      className={`${opt.image ? 'menu-image-btn' : 'menu-circular-btn'} ${opt.exit ? 'exit' : ''}`}
       onMouseEnter={() => onHover(opt.id)}
       onMouseLeave={() => onHover(null)}
       onClick={(e) => {
-          new Audio(clickSfx).play();
+          playSfx(clickSfx);
           window.spawnParticles?.(e);
           onAction();
       }}
+      whileHover={{ scale: opt.image ? 1.05 : 1.1, y: -5 }}
+      whileTap={{ scale: 0.95 }}
     >
-      <div className="btn-icon-v2">{opt.icon}</div>
-      <div className="btn-text-content">
-        <span className="btn-label-v2">{opt.label}</span>
-        <span className="btn-desc-v2">{opt.desc}</span>
-      </div>
+      {opt.image ? (
+        <img src={opt.image} alt={opt.label} style={{ width: '100%', height: 'auto', display: 'block' }} />
+      ) : (
+        <div className="menu-btn-icon">{opt.icon}</div>
+      )}
     </motion.button>
-);
+    <div className="menu-btn-tooltip">
+      <div className="menu-tooltip-label">{opt.label}</div>
+      <div className="menu-tooltip-desc">{opt.desc}</div>
+    </div>
+  </motion.div>
+)});
 
-const MainMenu = ({ onStart, onTutorial, onCharacters, onSettings, onDevMode }) => {
+const MainMenu = ({ onStart, onTutorial, onCharacters, onSettings, onGacha, onShop }) => {
   const [hoveredBtn, setHoveredBtn] = useState(null);
+  const { playMusic, stopMusic } = useAudio();
 
   useEffect(() => {
-    const audio = new Audio(menuMusic);
-    audio.loop = true;
-    audio.volume = 0.5;
-    audio.play().catch(() => console.log("Autoplay blocked"));
-    return () => { audio.pause(); audio.currentTime = 0; };
-  }, []);
+    playMusic(menuMusic, true);
+    return () => { stopMusic(); };
+  }, [playMusic, stopMusic]);
 
   const menuOptions = [
-    { id: 'start', label: 'INICIAR AVENTURA', desc: 'ENTRA AL MUNDO ARCANO', icon: <img src={swordImg} style={{ width: 22 }} />, action: onStart },
-    { id: 'tutorial', label: 'ACADEMIA MÁGICA', desc: 'APRENDE LOS HECHIZOS', icon: <img src={magicIcon} style={{ width: 22 }} />, action: onTutorial },
-    { id: 'characters', label: 'PERSONAJES', desc: 'ESCOGE TU HÉROE', icon: <User size={22} />, action: onCharacters },
-    { id: 'dev', label: 'MODO OBSERVADOR', desc: 'EXPLORA LAS DIMENSIONES', icon: <Map size={22} />, action: onDevMode }
+    { id: 'start', label: 'PRÓXIMAMENTE', desc: 'Aventura en desarrollo', image: btnJugar, action: () => alert("Modo Aventura en construcción") },
+    { id: 'tutorial', label: 'ACADEMIA MÁGICA', desc: 'Aprende los hechizos', image: btnTutorial, action: onTutorial },
+    { id: 'characters', label: 'PERSONAJES', desc: 'Escoge tu héroe', image: btnPersonajes, action: onCharacters },
+    { id: 'gacha', label: 'INVOCACIÓN', desc: 'Obtén recompensas', image: btnInvocacion, action: onGacha },
+    { id: 'shop', label: 'TIENDA', desc: 'Ofertas exclusivas', image: btnTienda, action: onShop }
   ];
 
   return (
@@ -97,18 +114,41 @@ const MainMenu = ({ onStart, onTutorial, onCharacters, onSettings, onDevMode }) 
             <MenuButton key={opt.id} opt={opt} isHovered={hoveredBtn === opt.id} onHover={setHoveredBtn} onAction={opt.action} />
           ))}
         </div>
+
+        {/* CENTER COLUMN (GACHA & SHOP) */}
+        <div className="center-buttons" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '10px', gap: '15px' }}>
+           <MenuButton 
+             key={menuOptions[3].id} 
+             opt={menuOptions[3]} 
+             isHovered={hoveredBtn === menuOptions[3].id} 
+             onHover={setHoveredBtn} 
+             onAction={menuOptions[3].action} 
+           />
+           <MenuButton 
+             key={menuOptions[4].id} 
+             opt={menuOptions[4]} 
+             isHovered={hoveredBtn === menuOptions[4].id} 
+             onHover={setHoveredBtn} 
+             onAction={menuOptions[4].action} 
+           />
+        </div>
+
         <div className="right-buttons">
-          {menuOptions.slice(2, 4).map((opt) => (
-            <MenuButton key={opt.id} opt={opt} isHovered={hoveredBtn === opt.id} onHover={setHoveredBtn} onAction={opt.action} />
-          ))}
+          <MenuButton 
+            key={menuOptions[2].id} 
+            opt={menuOptions[2]} 
+            isHovered={hoveredBtn === menuOptions[2].id} 
+            onHover={setHoveredBtn} 
+            onAction={menuOptions[2].action} 
+          />
         </div>
       </div>
 
       <button 
-        className="settings-btn-v2" 
+        className="settings-btn-image" 
         onClick={onSettings}
       >
-        <Settings size={22} />
+        <img src={btnConfiguracion} alt="Configuración" style={{ width: '100%', height: 'auto', display: 'block' }} />
       </button>
       <button 
         className="exit-btn-v2" 

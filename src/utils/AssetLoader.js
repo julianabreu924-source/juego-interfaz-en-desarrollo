@@ -11,18 +11,36 @@ export const preloadImage = (url) => {
   });
 };
 
-export const preloadAudio = (url) => {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio();
-    audio.src = url;
-    // canplaythrough suggests the full file is loaded and playable
-    audio.oncanplaythrough = () => resolve(url);
-    audio.oncanplay = () => resolve(url);
-    audio.onerror = () => reject(new Error(`Failed to load audio: ${url}`));
+export const preloadAudio = async (url) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
     
-    // Snappier fallback for audio loading
-    setTimeout(() => resolve(url), 500); 
-  });
+    return new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.oncanplaythrough = () => resolve(url);
+        audio.oncanplay = () => resolve(url);
+        audio.onerror = () => reject(new Error(`Audio object error: ${url}`));
+        
+        audio.src = objectUrl;
+        
+        // Fallback for safety
+        setTimeout(() => resolve(url), 2000);
+    });
+  } catch (err) {
+    // If fetch fails (network error, etc), fallback to old method or just reject
+    console.warn(`Audio fetch failed for ${url}, trying direct load...`);
+    return new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.src = url;
+        audio.oncanplaythrough = () => resolve(url);
+        audio.oncanplay = () => resolve(url);
+        audio.onerror = () => reject(new Error(`Failed to load audio: ${url}`));
+        setTimeout(() => resolve(url), 2000);
+    });
+  }
 };
 
 export const preloadAssets = async (assets, onProgress) => {

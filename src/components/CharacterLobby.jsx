@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, User, Shield, Zap, Sword, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import wizardImg from '../assets/images/characters/MAGO_DE_BATALLA_2D-removebg-preview.png';
 import elfImg from '../assets/images/characters/CAZADORA_ELFO-removebg-preview.png';
+import reinaImg from '../assets/images/characters/Reina.png';
 import lobbyMusic from '../assets/audio/music/lobby.mp3';
 import clickSfx from '../assets/audio/sfx/click.mp3';
 
@@ -62,12 +63,12 @@ const CharacterLobby = ({ onBack, onSelect }) => {
     },
     {
       id: 3,
-      name: "SÁBIA DE LUZ",
+      name: "REINA",
       role: "CURANDERA",
-      description: "Próximamente: Especialista en restauración y protección divina.",
+      description: "Sábia de la luz, especialista en restauración y protección divina.",
       stats: { attack: 20, defense: 50, magic: 85, speed: 50 },
-      image: null,
-      locked: true
+      image: reinaImg,
+      locked: false
     },
     {
       id: 4,

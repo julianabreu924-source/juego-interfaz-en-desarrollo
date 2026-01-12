@@ -1,17 +1,19 @@
 import React, { useState, Suspense, lazy, useEffect } from 'react';
 import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
-import GameOver from './components/GameOver';
 import PixelParticles from './components/PixelParticles';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { GAME_CONFIG } from './config/constants';
 
-import WinScreen from './components/WinScreen';
-import InGameUI from './components/InGameUI';
 import CharacterLobby from './components/CharacterLobby';
 
-// Lazy load the game engine
-const GameContainer = lazy(() => import('./core/GameContainer'));
+// Lazy load Gacha System & Shop
+// Lazy load Gacha System & Shop
+const GachaSystem = lazy(() => import('./components/GachaSystem'));
+const ShopSystem = lazy(() => import('./components/ShopSystem'));
+
+import { AudioProvider } from './context/AudioContext';
+import SettingsModal from './components/SettingsModal';
 
 const toggleFullScreen = () => {
   if (!document.fullscreenElement) {
@@ -21,28 +23,48 @@ const toggleFullScreen = () => {
   }
 };
 
-function App() {
-  const [gameState, setGameState] = useState('loading'); // loading, menu, playing, gameover, win
-  const [gameKey, setGameKey] = useState(0); // For forcing re-mount on retry
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [scale, setScale] = useState(1);
+import { useGameStore } from './store/useGameStore';
 
-  // Resolution Scaling Logic
+function App() {
+  const { 
+    gameState, setGameState, 
+    showSettings, setShowSettings 
+  } = useGameStore();
+
+  const [scale, setScale] = useState(1);
+  const [dimensions, setDimensions] = useState({ 
+    width: GAME_CONFIG.LOGICAL_WIDTH, 
+    height: GAME_CONFIG.LOGICAL_HEIGHT 
+  });
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  // Resolution Scaling Logic with Debounce for Performance
   useEffect(() => {
+    let timeoutId = null;
+
     const handleResize = () => {
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const scaleX = windowWidth / GAME_CONFIG.LOGICAL_WIDTH;
-      const scaleY = windowHeight / GAME_CONFIG.LOGICAL_HEIGHT;
-      const newScale = Math.min(scaleX, scaleY);
-      setScale(newScale);
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      timeoutId = setTimeout(() => {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        const h = GAME_CONFIG.LOGICAL_HEIGHT;
+        const newScale = windowHeight / h;
+        const newWidth = Math.ceil(windowWidth / newScale);
+        
+        setScale(newScale);
+        setDimensions({ width: newWidth, height: h });
+      }, 150); // Performance optimization: debounce
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial calculation
+    handleResize();
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   // F11 Fullscreen Toggle
@@ -61,199 +83,162 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleStartGame = () => {
-    toggleFullScreen();
-    setGameKey(prev => prev + 1); 
-    setGameState('playing');
-    setIsPaused(false);
-    setCurrentLevel(1);
-  };
+  // Capture PWA Install Prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
-  const handleGameOver = () => {
-    setGameState('gameover');
-  };
-
-  const handleWin = () => {
-    if (currentLevel <= 2) {
-        setCurrentLevel(prev => prev + 1);
-        setGameKey(prev => prev + 1); // Forzar recarga del motor para el nuevo nivel
-    } else {
-        setGameState('win');
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
     }
   };
 
-  const togglePause = () => {
-    setIsPaused(prev => !prev);
-  };
-
-  const handleDevViewer = () => {
-    setGameState('dev-viewer');
-  };
-
-  const handleRestart = () => {
-    setGameKey(prev => prev + 1); // Increment key to reset World component
-    setGameState('playing');
-  };
-
-  const handleExit = () => {
-    setGameState('menu');
-  };
-
-  const handleLobby = () => {
-    setGameState('lobby');
-  };
+  const handleExit = () => setGameState('menu');
+  const handleLobby = () => setGameState('lobby');
+  const handleGacha = () => setGameState('gacha');
+  const handleShop = () => setGameState('shop');
+  const handleSettings = () => setShowSettings(true);
 
   const handleCharacterSelect = (char) => {
     console.log("Personaje seleccionado:", char);
-    setGameState('menu'); // Return to menu after selection
+    setGameState('menu');
+  };
+  
+  // Attempt to lock orientation to landscape
+  const lockOrientation = async () => {
+    try {
+      // Check if it's mobile/tablet
+      if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+        }
+        
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape');
+        }
+      }
+    } catch (err) {
+      console.warn("Orientation lock failed:", err);
+    }
   };
 
+  useEffect(() => {
+    // Initial attempt
+    lockOrientation();
+    
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        lockOrientation();
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   return (
-    <div className="game-wrapper">
-      <PixelParticles />
-      
-      {/* SCALED CONTAINER: Holds both Game and UI */}
-      <div 
-        className="game-scaler"
-        style={{
-          width: GAME_CONFIG.LOGICAL_WIDTH,
-          height: GAME_CONFIG.LOGICAL_HEIGHT,
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          position: 'absolute',
-          overflow: 'hidden',
-          boxShadow: '0 0 100px rgba(0,0,0,0.8)', // Enhanced shadow
-          imageRendering: 'pixelated'
-        }}
-      >
-        <div className="vignette-overlay" />
+    <AudioProvider>
+      <div className="game-wrapper" onClick={() => {
+        // Subtle attempt to lock on any click if not already landscape
+        if (window.innerHeight > window.innerWidth) {
+          lockOrientation();
+        }
+      }}>
+        <PixelParticles />
         
-        <AnimatePresence mode="wait">
-          {gameState === 'loading' && (
-            <LoadingScreen key="loading" onComplete={() => setGameState('menu')} />
-          )}
+        {/* Mobile Orientation Warning */}
+        <div className="portrait-warning">
+          <div className="rotate-icon" />
+          <h2 className="warning-text-large">MODO HORIZONTAL REQUERIDO</h2>
+          <p className="warning-text-small">Por favor, rota tu dispositivo para una mejor experiencia arcana.</p>
+          <button 
+            className="force-landscape-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              lockOrientation();
+            }}
+          >
+            FORZAR LANDSCAPE
+          </button>
+        </div>
 
-          {gameState === 'menu' && (
-            <MainMenu 
-              key="menu"
-              onStart={handleStartGame}
-              onTutorial={() => alert('Tutorial próximamente...')}
-              onCharacters={handleLobby}
-              onSettings={() => alert('Configuración próximamente...')}
-              onDevMode={handleDevViewer}
-            />
-          )}
-
-          {gameState === 'lobby' && (
-            <CharacterLobby 
-              key="lobby"
-              onBack={() => setGameState('menu')}
-              onSelect={handleCharacterSelect}
-            />
-          )}
+        {/* SCALED CONTAINER: Holds UI */}
+        <div 
+          className="game-scaler"
+          style={{
+            width: dimensions.width,
+            height: dimensions.height,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            overflow: 'hidden',
+            imageRendering: 'pixelated'
+          }}
+        >
+          <div className="vignette-overlay" />
           
-          {(gameState === 'playing' || gameState === 'gameover' || gameState === 'dev-viewer' || gameState === 'win') && (
-            <Suspense fallback={<div className="loading-container">CARGANDO MOTOR...</div>}>
-              <div key="game-content" style={{ width: '100%', height: '100%', position: 'relative' }}>
-                <GameContainer 
-                  key={gameKey}
-                  gameState={gameState} 
-                  isPaused={isPaused}
-                  levelId={currentLevel}
-                  onGameOver={handleGameOver}
-                  onComplete={handleWin}
-                />
-                
-                {(gameState === 'playing' || gameState === 'win') && (
-                  <InGameUI
-                    onBack={handleExit}
-                    onTogglePause={togglePause}
-                    isPaused={isPaused}
-                    onRestart={handleRestart}
+          <AnimatePresence mode="wait">
+            {gameState === 'loading' && (
+              <LoadingScreen key="loading" onComplete={() => setGameState('menu')} />
+            )}
+
+            {gameState === 'menu' && (
+              <MainMenu 
+                key="menu"
+                onStart={() => alert('Modo Aventura en construcción')}
+                onTutorial={() => alert('Tutorial próximamente...')}
+                onCharacters={handleLobby}
+                onSettings={handleSettings}
+                onGacha={handleGacha}
+                onShop={handleShop}
+              />
+            )}
+
+            {gameState === 'lobby' && (
+              <CharacterLobby 
+                key="lobby"
+                onBack={() => setGameState('menu')}
+                onSelect={handleCharacterSelect}
+              />
+            )}
+
+            {gameState === 'gacha' && (
+              <Suspense fallback={<div className="loading-container">CARGANDO ALTAR...</div>}>
+                  <GachaSystem onBack={handleExit} />
+              </Suspense>
+            )}
+
+            {gameState === 'shop' && (
+              <Suspense fallback={<div className="loading-container">CARGANDO MERCADO...</div>}>
+                  <ShopSystem onBack={handleExit} />
+              </Suspense>
+            )}
+          </AnimatePresence>
+
+          {/* GLOBAL OVERLAYS */}
+          <AnimatePresence>
+              {showSettings && (
+                  <SettingsModal 
+                    onClose={() => setShowSettings(false)} 
+                    onInstall={handleInstallClick}
+                    canInstall={!!deferredPrompt}
                   />
-                )}
-
-                <AnimatePresence>
-                  {gameState === 'gameover' && (
-                    <GameOver 
-                      onRestart={handleRestart}
-                      onExit={handleExit}
-                    />
-                  )}
-                  {gameState === 'win' && (
-                    <WinScreen 
-                      onRestart={handleRestart}
-                      onExit={handleExit}
-                    />
-                  )}
-                  {gameState === 'dev-viewer' && (
-                    <motion.div 
-                      className="dev-ui-overlay"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ pointerEvents: 'none' }} // Allow clicks pass through to game for camera
-                    >
-                      {/* Bottom Controls Bar */}
-                      <div style={{ 
-                        position: 'absolute', 
-                        bottom: 20, 
-                        right: 20, 
-                        display: 'flex', 
-                        gap: '15px', 
-                        alignItems: 'center',
-                        pointerEvents: 'auto',
-                        zIndex: 9999 
-                      }}>
-                          <button 
-                            className="pixel-button secondary" 
-                            onClick={() => {
-                                setCurrentLevel(prev => Math.max(1, prev - 1));
-                                setGameKey(prev => prev + 1);
-                            }}
-                            style={{ fontSize: '12px', padding: '8px 12px' }}
-                          >
-                            ◀
-                          </button>
-                          
-                          <div style={{ 
-                            background: 'rgba(0,0,0,0.8)', 
-                            padding: '8px 12px', 
-                            color: '#fff', 
-                            fontFamily: '"Press Start 2P"',
-                            fontSize: '12px',
-                            border: '2px solid #4a4a4a'
-                          }}>
-                            NIVEL {currentLevel}
-                          </div>
-
-                          <button 
-                            className="pixel-button secondary" 
-                            onClick={() => {
-                                setCurrentLevel(prev => Math.min(3, prev + 1));
-                                setGameKey(prev => prev + 1);
-                            }}
-                            style={{ fontSize: '12px', padding: '8px 12px' }}
-                          >
-                            ▶
-                          </button>
-
-                          <div style={{ width: '10px' }} /> {/* Spacer */}
-
-                          <button className="pixel-button secondary" onClick={handleExit}>
-                            SALIR
-                          </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Suspense>
-          )}
-        </AnimatePresence>
+              )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
+    </AudioProvider>
   );
 }
 

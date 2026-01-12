@@ -1,366 +1,301 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { useTick, extend } from '@pixi/react';
-import { Container, Graphics, Sprite, Text, Assets, TilingSprite } from 'pixi.js';
+import React, { useEffect, useRef } from 'react';
+import Phaser from 'phaser';
 import { GAME_CONFIG, PLAYER_CONFIG } from '../config/constants';
 import { LEVELS, TILE_TYPES } from '../config/levels';
-import { useKeyboard } from '../hooks/useKeyboard';
-import { loadCollisionMap, findNearestWalkablePoint } from '../game/collisionMap';
-import { movePlayer } from '../game/movement';
 
-import wizardImg from '../assets/images/characters/wizard.png';
+// Helper to read pixel data from a Phaser Texture for collision
+const getPixelCollision = (scene, x, y, textureKey, width, height) => {
+    if (!scene.textures.exists(textureKey)) return false;
+    
+    // We need to access the texture source data
+    const texture = scene.textures.get(textureKey);
+    const canvas = scene.textures.getPixel(x, y, textureKey);
+    
+    // If alpha is > 0 (or specific color), it's solid. 
+    // Assuming black/white map or just alpha presence.
+    return canvas && canvas.alpha > 0;
+};
 
-extend({ Container, Graphics, Sprite, Text, TilingSprite });
+class MainScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'MainScene' });
+    }
 
-const World = ({ levelId = 1, onGameOver, onComplete, gameState, isPaused, width, height }) => {
-  const keys = useKeyboard();
-  const level = LEVELS[levelId];
-  const tileSize = GAME_CONFIG.TILE_SIZE;
-  const isDevMode = gameState === 'dev-viewer';
+    init(data) {
+        this.levelId = data.levelId;
+        this.levelData = LEVELS[this.levelId];
+        this.onGameOver = data.onGameOver;
+        this.onComplete = data.onComplete;
+        this.isDevMode = data.isDevMode;
+    }
 
-  const [textures, setTextures] = useState({ wizard: null, portal: null, background: null, collision: null });
-  const [loading, setLoading] = useState(true);
-  
-  const containerRef = useRef(null);
-  const spriteRef = useRef(null);
-  const portalRef = useRef(null);
-  const levelGraphicsRef = useRef(null);
-  const backgroundRef = useRef(null);
-  const portalPhase = useRef(0);
-  const camera = useRef({ x: 0, y: 0 });
-
-  const player = useRef({
-    x: level.startX,
-    y: level.startY,
-    vx: 0,
-    vy: 0,
-    width: PLAYER_CONFIG.WIDTH,
-    height: PLAYER_CONFIG.HEIGHT,
-    onGround: true,
-    direction: 1,
-    deathAnimationStarted: false
-  });
-
-  const portalActivated = useRef(false); // Prevent multiple portal activations
-
-  // Assets Management
-  useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        setLoading(true);
+    preload() {
+        // Load Level Assets
+        this.load.image('wizard', '/src/assets/images/characters/wizard.png');
         
-        const wizardP = Assets.load(wizardImg);
-        const portalP = Assets.load(level.portal);
-        const bgP = Assets.load(level.background);
-        
-        // Match world dimensions for collision 1:1
-        // Level logic uses: level.map[0].length * tileSize
-        const worldWidth = level.map[0].length * tileSize;
-        
-        // Load collision data for logic AND texture for visualization
-        const colLogicP = level.collisionMap ? loadCollisionMap(level.collisionMap, worldWidth, height) : Promise.resolve();
-        const colTexP = level.collisionMap ? Assets.load(level.collisionMap) : Promise.resolve(null);
+        // Dynamically load level specific assets
+        if (this.levelData.background) {
+            this.load.image('background', this.levelData.background);
+        }
+        if (this.levelData.portal) {
+            this.load.image('portal', this.levelData.portal);
+        }
+        if (this.levelData.collisionMap) {
+            this.load.image('collision', this.levelData.collisionMap);
+        }
+    }
 
-        const [wiz, port, bg, colTex] = await Promise.all([wizardP, portalP, bgP, colTexP, colLogicP]);
-
-        [wiz, bg, colTex].forEach(t => { if(t && t.source) t.source.scaleMode = 'nearest'; });
-        setTextures({ wizard: wiz, portal: port, background: bg, collision: colTex });
+    create() {
+        const { width, height } = this.scale;
+        const mapWidth = this.levelData.map[0].length * GAME_CONFIG.TILE_SIZE;
         
-        // Auto-correct spawn position based on collision map
-        if (level.collisionMap) {
-             const corrected = findNearestWalkablePoint(player.current.x, player.current.y);
-             console.log(`[Level ${levelId}] Auto-Correction: Moving player from (${player.current.x}, ${player.current.y}) to (${corrected.x}, ${corrected.y})`);
-             player.current.x = corrected.x;
-             player.current.y = corrected.y;
-             player.current.baseY = corrected.y;
+        // 1. Setup World Bounds
+        this.physics.world.setBounds(0, 0, mapWidth, height);
+        
+        // 2. Background
+        if (this.textures.exists('background')) {
+            const bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
+            bg.displayWidth = mapWidth;
+            bg.displayHeight = height;
+            bg.setDepth(0); // Layer 0
         }
 
-        setLoading(false);
-      } catch (err) {
-        console.error("Critical Asset Loading Error:", err);
-      }
-    };
-    loadAssets();
-  }, [levelId, level.background, level.portal, level.collisionMap]);
-
-  // Reset Player on Level Change
-  useEffect(() => {
-    console.log(`🎮 Level ${levelId} initialized - Background: ${level.background}`);
-    portalActivated.current = false; // Reset portal flag for new level
-    Object.assign(player.current, {
-      x: level.startX,
-      y: level.startY,
-      baseY: level.startY,
-      zOffset: 0,
-      vx: 0, vy: 0,
-      onGround: true,
-      deathAnimationStarted: false
-    });
-  }, [level]);
-
-  useEffect(() => {
-    if (loading || !levelGraphicsRef.current) return;
-    const g = levelGraphicsRef.current;
-    g.clear();
-
-    // Draw organic boundaries in Dev Mode
-    if (isDevMode && level.boundaries) {
-        g.setStrokeStyle({ width: 4, color: 0xff0000, alpha: 0.8 });
-        
-        // Top Boundary
-        for (let i = 0; i < level.boundaries.top.length - 1; i++) {
-            g.moveTo(level.boundaries.top[i].x, level.boundaries.top[i].y * height);
-            g.lineTo(level.boundaries.top[i+1].x, level.boundaries.top[i+1].y * height);
+        // 3. Collision Visualization (Dev Mode) or Hidden Data
+        if (this.textures.exists('collision')) {
+            const col = this.add.image(0, 0, 'collision').setOrigin(0, 0);
+            col.displayWidth = mapWidth;
+            col.displayHeight = height;
+            col.setAlpha(this.isDevMode ? 0.5 : 0); // Hide in normal mode
+            col.setDepth(10);
+            
+            // Allow reading pixels
+            // Note: Phaser 3.60+ handles texture data differently, ensuring we can read it is key.
+            // Often easiest to draw to a hidden canvas if textures are WebGL only, 
+            // but `textures.getPixel` works if the source is available.
         }
-        g.stroke();
 
-        // Bottom Boundary
-        for (let i = 0; i < level.boundaries.bottom.length - 1; i++) {
-            g.moveTo(level.boundaries.bottom[i].x, level.boundaries.bottom[i].y * height);
-            g.lineTo(level.boundaries.bottom[i+1].x, level.boundaries.bottom[i+1].y * height);
-        }
-        g.stroke();
-
-        // Pits (Voids)
-        if (level.boundaries.pits) {
-            g.setStrokeStyle({ width: 2, color: 0xff0000, alpha: 0.3 });
-            level.boundaries.pits.forEach(pit => {
-                g.rect(pit.start, height * 0.4, pit.end - pit.start, height * 0.5)
-                 .fill({ color: 0xff4444, alpha: 0.2 });
+        // 4. Portal
+        this.portalActivated = false;
+        if (this.textures.exists('portal')) {
+            // Find goal pos
+            let goalX = 0, goalY = 0;
+            this.levelData.map.forEach((row, y) => {
+                row.forEach((tile, x) => {
+                    if (tile === TILE_TYPES.GOAL) {
+                        goalX = x * GAME_CONFIG.TILE_SIZE + GAME_CONFIG.TILE_SIZE/2;
+                        goalY = y * GAME_CONFIG.TILE_SIZE + GAME_CONFIG.TILE_SIZE/2;
+                    }
+                });
+            });
+            
+            this.portal = this.add.sprite(goalX, goalY, 'portal');
+            this.portal.setScale(0.3);
+            this.portal.setDepth(1);
+            
+            // Portal Animation (Tween)
+            this.tweens.add({
+                targets: this.portal,
+                scale: 0.35,
+                alpha: 0.8,
+                duration: 1000,
+                yoyo: true,
+                repeat: -1
             });
         }
-    }
-  }, [loading, level, tileSize, isDevMode, height]);
 
-  const goalPos = useMemo(() => {
-    // Standard Tile Loop
-    for (let y = 0; y < level.map.length; y++) {
-      for (let x = 0; x < level.map[0].length; x++) {
-        if (level.map[y][x] === TILE_TYPES.GOAL) {
-          let gx = x * tileSize + tileSize/2;
-          let gy = y * tileSize + tileSize/2;
-          
-          // Refine portal Y on collision maps (only for Goal tiles)
-          // Specifically crucial for Level 1 transition
-          if (level.collisionMap) {
-               // Scan near the goal tile logic position
-               // We scan a bit lower/higher to snap to floor
-               const corrected = findNearestWalkablePoint(gx, gy, 300); // Increased radius for larger maps
-               if (corrected) {
-                   console.log(`Portal auto-positioned from (${gx}, ${gy}) to (${corrected.x}, ${corrected.y})`);
-                   gx = corrected.x;
-                   gy = corrected.y;
-               }
-          }
-          
-          return { x: gx, y: gy };
+        // 5. Player Setup
+        this.player = this.add.sprite(this.levelData.startX, this.levelData.startY, 'wizard');
+        this.player.setOrigin(0.5, 1); // Feet pivot
+        this.player.setScale(0.15);
+        this.player.setDepth(5);
+        
+        // Custom Physics State
+        this.pState = {
+            velocity: { x: 0, y: 0 },
+            onGround: false,
+            jumpVelocity: 0,
+            zOffset: 0,
+            isDead: false
+        };
+
+        // 6. Camera
+        this.cameras.main.setBounds(0, 0, mapWidth, height);
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        this.cameras.main.setZoom(1);
+
+        // Inputs
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+            w: Phaser.Input.Keyboard.KeyCodes.W,
+            s: Phaser.Input.Keyboard.KeyCodes.S,
+            a: Phaser.Input.Keyboard.KeyCodes.A,
+            d: Phaser.Input.Keyboard.KeyCodes.D,
+            space: Phaser.Input.Keyboard.KeyCodes.SPACE
+        });
+        
+        // Create invisible canvas for pixel data if needed
+        // (Phaser's `textures.getPixel` handles this usually)
+    }
+
+    update(time, delta) {
+        if (this.pState.isDead) return;
+
+        const dt = delta / 1000; // Seconds
+        const speed = 200; // Pixels per second
+        let vx = 0;
+        let vy = 0;
+
+        // --- INPUT ---
+        if (this.cursors.left.isDown || this.wasd.a.isDown) {
+            vx = -speed;
+            this.player.setFlipX(true);
+        } else if (this.cursors.right.isDown || this.wasd.d.isDown) {
+            vx = speed;
+            this.player.setFlipX(false);
         }
-      }
-    }
-    return null;
-  }, [level, tileSize]);
 
-  const triggerDeath = useCallback(() => {
-    if (isDevMode || player.current.deathAnimationStarted) return;
-    player.current.deathAnimationStarted = true;
-    player.current.vy = -12;
-    setTimeout(() => onGameOver?.(), 1500);
-  }, [isDevMode, onGameOver]);
-
-  // --- Sub-systems for Update Loop ---
-
-  // helper for organic boundaries
-  const getYBoundary = useCallback((x, points) => {
-    if (!points || points.length === 0) return 0;
-    // Find segments
-    for (let i = 0; i < points.length - 1; i++) {
-        if (x >= points[i].x && x <= points[i + 1].x) {
-            const t = (x - points[i].x) / (points[i + 1].x - points[i].x);
-            return (points[i].y + t * (points[i + 1].y - points[i].y)) * height;
+        // Depth movement (Z-simulated Y)
+        if (this.cursors.up.isDown || this.wasd.w.isDown) {
+            vy = -speed * 0.7;
+        } else if (this.cursors.down.isDown || this.wasd.s.isDown) {
+            vy = speed * 0.7;
         }
-    }
-    return points[x < points[0].x ? 0 : points.length - 1].y * height;
-  }, [height]);
 
-  const handlePhysics = (dt) => {
-    const p = player.current;
-    if (p.deathAnimationStarted) {
-        p.vy += 0.5 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        return;
-    }
-
-    // Horizontal movement (A / D / Arrows)
-    let targetVx = 0;
-    if (keys['ArrowLeft'] || keys['KeyA']) { targetVx = -GAME_CONFIG.WALK_SPEED; p.direction = -1; }
-    else if (keys['ArrowRight'] || keys['KeyD']) { targetVx = GAME_CONFIG.WALK_SPEED; p.direction = 1; }
-    p.vx += (targetVx - p.vx) * 0.4;
-    // Depth movement (W / S / Arrows)
-    let targetVy = 0;
-    const depthSpeed = GAME_CONFIG.WALK_SPEED * 0.6;
-    if (keys['KeyW'] || keys['ArrowUp']) { targetVy = -depthSpeed; }
-    else if (keys['KeyS'] || keys['ArrowDown']) { targetVy = depthSpeed; }
-    
-    // Updated Movement Logic with Collision Map
-    let dx = p.vx * dt;
-    let dy = targetVy * dt;
-
-    if (level.collisionMap) {
-        const next = movePlayer(p.x, p.baseY, dx, dy);
-        p.x = next.x;
-        p.baseY = next.y;
-    } else {
-        // Fallback or non-collision levels
-        p.x += dx;
-        p.baseY += dy;
+        // --- COLLISION LOGIC (Custom Pixel Check) ---
+        // We calculate next position
+        const nextX = this.player.x + vx * dt;
+        const nextY = this.player.y + vy * dt;
         
-        // X boundaries
-        const mapWidth = level.map[0].length * tileSize;
-        p.x = Math.max(20, Math.min(p.x, mapWidth - 60));
+        let canMoveX = true;
+        let canMoveY = true;
 
-        // Dynamic boundaries from level config (red lines logic)
-        const topLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.top) : height * 0.5;
-        const bottomLimit = level.boundaries ? getYBoundary(p.x, level.boundaries.bottom) : height * 0.85;
+        // Check Collision Map if exists
+        if (this.textures.exists('collision')) {
+            // Simple point check at feet
+            const isSolid = (x, y) => {
+                 const color = this.textures.getPixel(x, y, 'collision');
+                 // Assume BLACK is wall/void, TRANSPARENT/WHITE is walkable?
+                 // Let's match previous logic: usually Walkable = specific color or Void = alpha 0
+                 // Let's assume ALPHA > 0 means "Walkable Area" (Mask) OR "Obstacle"?
+                 // In the previous code `collisionMap.js`, `canWalk` checked a canvas context.
+                 // Let's assume the map defines the FLOOR. So color = valid.
+                 return color && color.a > 0;
+            };
 
-        p.baseY = Math.max(topLimit, Math.min(p.baseY, bottomLimit));
-    }
-
-    // Jump logic (Spacebar)
-    const isJumping = keys['Space'];
-    if (isJumping && p.onGround) {
-        p.jumpVelocity = GAME_CONFIG.JUMP_FORCE;
-        p.onGround = false;
-    }
-
-    // Handle Jump Physics (Z-axis)
-    if (!p.onGround) {
-        p.jumpVelocity += 0.6 * dt; // Gravity
-        p.zOffset = (p.zOffset || 0) + p.jumpVelocity * dt;
-        
-        if (p.zOffset >= 0) {
-            p.zOffset = 0;
-            p.jumpVelocity = 0;
-            p.onGround = true;
+            // Check if next position is valid floor
+            if (!isSolid(nextX, this.player.y)) canMoveX = false;
+            if (!isSolid(this.player.x, nextY)) canMoveY = false;
         }
-    } else {
-        p.zOffset = 0;
-    }
 
-    // Update final visual Y
-    p.y = p.baseY + (p.zOffset || 0);
-  };
-
-  const handleCamera = () => {
-    const p = player.current;
-    const maxScroll = (level.map[0].length * tileSize) - width;
-
-    if (isDevMode) {
-        const speed = 15;
-        if (keys['ArrowLeft'] || keys['KeyA']) camera.current.x -= speed;
-        if (keys['ArrowRight'] || keys['KeyD']) camera.current.x += speed;
-    } else {
-        const targetCamX = Math.max(0, Math.min(p.x - width / 2, maxScroll));
-        camera.current.x += (targetCamX - camera.current.x) * 0.15;
-    }
-    
-    camera.current.x = Math.max(0, Math.min(camera.current.x, maxScroll));
-  };
-
-  const updateVisuals = () => {
-    const p = player.current;
-    
-    // Container Smoothing
-    if (containerRef.current) {
-        containerRef.current.position.set(-camera.current.x, -camera.current.y);
-    }
-
-    // Player Sprite
-    if (spriteRef.current) {
-        const breathe = Math.sin(Date.now() * 0.003) * 0.005;
-        const walkAnim = p.onGround && p.vx !== 0 ? Math.abs(Math.sin(Date.now() * 0.01)) * 3 : 0;
+        // Move
+        if (canMoveX) this.player.x += vx * dt;
+        if (canMoveY) this.player.y += vy * dt;
         
-        spriteRef.current.position.set(Math.round(p.x + p.width/2), Math.round(p.y + p.height) - walkAnim);
-        spriteRef.current.scale.set(p.direction * (0.15 + breathe), 0.15 - breathe);
+        // Keep in bounds
+        this.player.x = Phaser.Math.Clamp(this.player.x, 20, this.physics.world.bounds.width - 20);
+        this.player.y = Phaser.Math.Clamp(this.player.y, 50, this.physics.world.bounds.height - 50);
+
+
+        // --- JUMP (Fake Z-Axis) ---
+        const isJump = Phaser.Input.Keyboard.JustDown(this.cursors.space) || Phaser.Input.Keyboard.JustDown(this.wasd.space);
         
-        if (p.deathAnimationStarted) {
-            spriteRef.current.rotation += 0.2;
-            spriteRef.current.tint = 0xff4444;
-        } else {
-            spriteRef.current.tint = 0xcc99ff;
+        if (isJump && this.pState.onGround) {
+            this.pState.onGround = false;
+            this.pState.jumpVelocity = 300; // Jump force
         }
-    }
 
-    // Portal
-    if (portalRef.current) {
-        portalRef.current.scale.set(0.3 * (1 + Math.sin(portalPhase.current * 2) * 0.1)); 
-        portalRef.current.alpha = 0.8 + Math.sin(portalPhase.current) * 0.3;
-    }
-    
-    // Background is now a static world sprite, no parallax needed here
-  };
+        if (!this.pState.onGround) {
+            this.pState.jumpVelocity -= 800 * dt; // Gravity
+            this.pState.zOffset += this.pState.jumpVelocity * dt;
 
-  useTick((ticker) => {
-    if (loading || isPaused) return;
-    const dt = Math.min(ticker.deltaTime, 1.5);
-    portalPhase.current += 0.05 * dt;
-
-    handlePhysics(dt);
-    handleCamera();
-    updateVisuals();
-
-    // Check Level Complete
-    if (goalPos && !isDevMode && !player.current.deathAnimationStarted && !portalActivated.current) {
-        const p = player.current;
-        const dx = (p.x + p.width / 2) - goalPos.x;
-        const dy = p.baseY - goalPos.y; // Match player base with portal Y
-        
-        // Debug: Log distance to portal occasionally
-        if (Math.random() < 0.01) {
-            console.log(`Distance to portal: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}, Portal at (${goalPos.x}, ${goalPos.y}), Player at (${p.x}, ${p.baseY})`);
+            if (this.pState.zOffset <= 0) {
+                this.pState.zOffset = 0;
+                this.pState.onGround = true;
+                this.pState.jumpVelocity = 0;
+                
+                // Land FX could go here
+            }
         }
         
-        // Increased tolerance for easier portal entry
-        if (Math.abs(dx) < 100 && Math.abs(dy) < 100) {
-            console.log('🌀 Portal activated! Moving to next level...');
-            portalActivated.current = true; // Prevent multiple activations
-            onComplete?.();
+        // Apply Z-offset to visual sprite Y (but keep logical Y for depth sorting/collision)
+        // Actually, in restricted 2.5D, player.y is the floor position.
+        // We use a container or manipulate the sprite's display origin/offset.
+        // Let's just offset the Y visually? No, that messes up collision check next frame.
+        // Better: Use `this.player.y` as logical floor, and set `this.player.y` strictly for logic, 
+        // but since Phaser couples them, we might interpret `y` as floor, and draw sprite offset?
+        // No, simplest migration: Adjust Y visually only? 
+        // Actually, let's just subtract Z from Y for the sprite, but we need to track "Base Y".
+        // Oh right, Phaser sprite x/y IS the position.
+        // Let's store `baseY` on the player object.
+        if (this.player.baseY === undefined) this.player.baseY = this.player.y;
+        
+        // Sync Base Y with movement
+        if (canMoveY) this.player.baseY += vy * dt;
+        
+        // Render Position
+        this.player.y = this.player.baseY - this.pState.zOffset;
+
+
+        // --- PORTAL CHECK ---
+        if (this.portal && !this.portalActivated && !this.isDevMode) {
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.baseY, this.portal.x, this.portal.y);
+            if (dist < 50) {
+                this.portalActivated = true;
+                this.onComplete && this.onComplete();
+            }
         }
+        
+        // --- DEATH CHECK (Boundaries fallback) ---
+        // If needed
     }
-  });
+}
 
-  if (loading) return null;
+const World = ({ levelId = 1, onGameOver, onComplete, gameState, width, height }) => {
+    const gameRef = useRef(null);
+    const parentRef = useRef(null);
 
-  return (
-    <container>
-      <container ref={containerRef}>
-        {textures.background && (
-          <sprite 
-            texture={textures.background} 
-            width={level.map[0].length * tileSize} 
-            height={height}
-            alpha={1}
-          />
-        )}
-        {isDevMode && textures.collision && (
-          <sprite 
-            texture={textures.collision} 
-            width={level.map[0].length * tileSize} 
-            height={height}
-            alpha={0.5}
-            zIndex={5}
-          />
-        )}
-        <graphics ref={levelGraphicsRef} />
-        {textures.portal && goalPos && (
-            <sprite ref={portalRef} texture={textures.portal} anchor={0.5} x={goalPos.x} y={goalPos.y} />
-        )}
-        <sprite ref={spriteRef} texture={textures.wizard} anchor={{ x: 0.5, y: 1 }} visible={!isDevMode} />
-      </container>
-      {isDevMode && (
-          <container x={20} y={20}>
-              <text text="MODO OBSERVADOR (DEV)" style={{ fontFamily: '"Press Start 2P"', fontSize: 14, fill: '#ffffff' }} alpha={0.7} />
-          </container>
-      )}
-    </container>
-  );
+    useEffect(() => {
+        if (!parentRef.current) return;
+
+        const config = {
+            type: Phaser.AUTO,
+            width: width,
+            height: height,
+            parent: parentRef.current,
+            backgroundColor: '#1a072a',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 }, // Top-down style walking
+                    debug: gameState === 'dev-viewer'
+                }
+            },
+            scene: [MainScene],
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            }
+        };
+
+        const game = new Phaser.Game(config);
+        gameRef.current = game;
+        
+        // Pass React Props to Scene
+        game.scene.start('MainScene', { 
+            levelId, 
+            onGameOver, 
+            onComplete, 
+            isDevMode: gameState === 'dev-viewer' 
+        });
+
+        return () => {
+            game.destroy(true);
+        };
+    }, [levelId, gameState, width, height]);
+
+    return (
+        <div ref={parentRef} style={{ width: '100%', height: '100%' }} />
+    );
 };
 
 export default World;

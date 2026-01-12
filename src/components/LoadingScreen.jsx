@@ -2,20 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { preloadAssets } from '../utils/AssetLoader';
 
-// Asset imports for preloading
+// Asset imports for preloading (Solo UI/Menús)
 import swordImg from '../assets/images/ui/sword_icon.png';
-import magicIcon from '../assets/images/ui/magic_icon.png';
 import loadingBg from '../assets/images/environment/loading_screen.jpg';
 import lobbyBg from '../assets/images/environment/lobby_inner.jpg';
-import cavernMap from '../assets/images/environment/cavern_map.png';
-import cavernFitted from '../assets/images/environment/cavern_fitted.png';
-import cavernBg from '../assets/images/environment/cavern_bg.png';
-import cavernBgAlt from '../assets/images/environment/background_alt.png';
-import exitBtnImg from '../assets/images/ui/exit_button.png';
-import portalCavern from '../assets/images/environment/portal_cavern.png';
 import wizardImg from '../assets/images/characters/wizard.png';
 import menuMusic from '../assets/audio/music/menu.mp3';
-import adventureMusic from '../assets/audio/music/adventure.mp3';
 import charSelectMusic from '../assets/audio/music/lobby.mp3';
 import clickSfx from '../assets/audio/sfx/click.mp3';
 
@@ -33,21 +25,13 @@ const LoadingScreen = ({ onComplete }) => {
   ];
 
   useEffect(() => {
-    // Assets list
+    // Assets list (Solo UI/Menús)
     const assetsToLoad = [
         { type: 'image', url: swordImg },
-        { type: 'image', url: magicIcon },
         { type: 'image', url: wizardImg },
         { type: 'image', url: loadingBg },
         { type: 'image', url: lobbyBg },
-        { type: 'image', url: cavernMap },
-        { type: 'image', url: cavernFitted },
-        { type: 'image', url: cavernBg },
-        { type: 'image', url: cavernBgAlt },
-        { type: 'image', url: exitBtnImg },
-        { type: 'image', url: portalCavern },
         { type: 'audio', url: menuMusic },
-        { type: 'audio', url: adventureMusic },
         { type: 'audio', url: charSelectMusic },
         { type: 'audio', url: clickSfx }
     ];

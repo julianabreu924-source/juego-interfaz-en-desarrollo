@@ -1,0 +1,25 @@
+{
+  "short_name": "RunesReborn",
+  "name": "Runes of the Reborn: Arcane Legacy",
+  "icons": [
+    {
+      "src": "pwa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "pwa-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "orientation": "landscape",
+  "description": "Un épico juego de gacha 2D pixel art. Colecciona héroes, explora mazmorras y reclama tu legado.",
+  "categories": ["games", "rpg"]
+}
